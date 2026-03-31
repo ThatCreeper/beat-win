@@ -3,8 +3,12 @@
 public class Document
 {
     public IReadOnlyList<Line> Lines;
+    public int TotalRows = 0;
+    public int TotalPDFRows = 0;
 
     List<Line> lines;
+
+    public const int LinesPerPage = 55;
 
     public Document()
     {
@@ -39,15 +43,29 @@ public class Document
         InternallyRecombobulate(index);
         bool priorUnrendered = index == 0 ? true : lines[index - 1].PDFUnrenderedCache;
         priorUnrendered = lines[index].PDFUnrenderedCache = lines[index].IsUnrenderedPDF(priorUnrendered);
-        int totalRows = lines[index].GlobalRow + lines[index].RowCount;
-        int totalPDFRows = lines[index].GlobalPDFRow + lines[index].PDFRowCount;
-        for (int i = index + 1; i < lines.Count; i++)
+        if (index == 0)
+        {
+            TotalRows = 0;
+            TotalPDFRows = 0;
+        }
+        else
+        {
+            TotalRows = lines[index - 1].GlobalRow + lines[index - 1].RowCount;
+            TotalPDFRows = lines[index - 1].GlobalPDFRow + lines[index - 1].PDFRowCount;
+        }
+        for (int i = index; i < lines.Count; i++)
         {
             lines[i].PDFUnrenderedCache = lines[i].IsUnrenderedPDF(priorUnrendered);
-            lines[i].GlobalRow = totalRows;
-            lines[i].GlobalPDFRow = totalPDFRows;
-            totalRows += lines[i].RowCount;
-            totalPDFRows += lines[i].PDFRowCount;
+
+            if (lines[i].Kind == LineKind.PageBreak)
+            {
+                TotalPDFRows = ((int)Math.Floor((float)TotalPDFRows / LinesPerPage) + 1) * LinesPerPage;
+            }
+
+            lines[i].GlobalRow = TotalRows;
+            lines[i].GlobalPDFRow = TotalPDFRows;
+            TotalRows += lines[i].RowCount;
+            TotalPDFRows += lines[i].PDFRowCount;
             priorUnrendered = lines[i].PDFUnrenderedCache;
         }
     }
