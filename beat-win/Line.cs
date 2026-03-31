@@ -1,77 +1,74 @@
 ﻿namespace beat_win;
 
+public enum LineKind
+{
+    Action
+}
+
 public class Line
 {
+
     public List<string> Content;
+    public int GlobalRow = 0;
+    public LineKind Kind = LineKind.Action;
+    string rawContent;
+
+    public string RawContent => rawContent;
+
+    public bool IsBlank => Content.Count == 1 && Content[0].Length == 0;
+    public int RowCount => Content.Count;
+    public int MaxIdx => Content.Sum(c => c.Length);
+
+    public float LeftPad = GUI.ActionLeftPad;
+    public float RightPad = GUI.ActionRightPad;
+    public int LeftPadPX => GUI.Inch(LeftPad);
+    public int RightPadPX => GUI.Inch(RightPad);
 
     public Line(string content = "")
     {
         Content = [content];
-        Recombobulate();
+        rawContent = content;
     }
 
-    public void Recombobulate(string? content = null)
+    public void InternalRecombobulateDontCall()
     {
-        content = content ?? RawContent;
-        Wrap(content);
+        Wrap();
     }
 
-    private void Wrap(string content)
+    private void Wrap()
     {
         Content.Clear();
 
         int lineLength = (int)((8.5 - LeftPad - RightPad) * 10);
         int start = 0;
         int x = 0;
-        for (int i = 0; i < content.Length; i++)
+        for (int i = 0; i < rawContent.Length; i++)
         {
             x++;
             if (x <= lineLength) continue;
-            if (content[i] == ' ') continue;
+            if (rawContent[i] == ' ') continue;
             bool foundSpace = false;
             for (int j = i - 1; j >= start; j--)
             {
-                if (content[j] != ' ') continue;
+                if (rawContent[j] != ' ') continue;
                 foundSpace = true;
                 j++;
-                Content.Add(content.Substring(start, j - start));
+                Content.Add(rawContent.Substring(start, j - start));
                 start = j;
                 x = i - j + 1;
                 break;
             }
             if (!foundSpace)
             {
-                Content.Add(content.Substring(start, i - start));
+                Content.Add(rawContent.Substring(start, i - start));
                 start = i;
                 x = 1;
             }
         }
 
-        Content.Add(content.Substring(start));
+        Content.Add(rawContent.Substring(start));
     }
 
-    public string RawContent => String.Join("", Content);
-    public bool IsBlank => Content.Count == 1 && Content[0].Length == 0;
-    public int RowCount => Content.Count;
-    public int MaxIdx => Content.Sum(c => c.Length);
-
-    public void AddCharacter(int cursorIdx, char input)
-    {
-        AddString(cursorIdx, input.ToString());
-    }
-
-    public void RemoveCharacterBackwards(int cursorIdx)
-    {
-        if (cursorIdx == 0) return;
-        Recombobulate(RawContent.Remove(cursorIdx - 1, 1));
-    }
-
-    public string RemoveAllAfterPosition(int cursorIdx)
-    {
-        string result = RawContent.Substring(cursorIdx);
-        Recombobulate(RawContent.Remove(cursorIdx));
-        return result;
-    }
 
     // I don't like this code dup, but it makes the API nice.
     public int GetCursorCharX(int cursorIdx)
@@ -117,20 +114,8 @@ public class Line
         return idx;
     }
 
-    public void AddString(int cursorIdx, string add)
+    public void UnsafeSetRawContent(string newValue)
     {
-        Recombobulate(RawContent.Insert(cursorIdx, add));
+        rawContent = newValue;
     }
-
-    public int AddStringEnd(string add)
-    {
-        int idx = MaxIdx;
-        AddString(idx, add);
-        return idx;
-    }
-
-    public float LeftPad = GUI.ActionLeftPad;
-    public float RightPad = GUI.ActionRightPad;
-    public int LeftPadPX => GUI.Inch(LeftPad);
-    public int RightPadPX => GUI.Inch(RightPad);
 }

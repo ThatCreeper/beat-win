@@ -13,6 +13,8 @@ internal static class Program
     static int cursorUpDownX = -1;
     static bool mouseVisible = true;
 
+    static Line CurrentLine => document.Lines[cursorRow];
+
     static void Main(string[] args)
     {
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.Msaa4xHint);
@@ -30,9 +32,10 @@ internal static class Program
             LineGeneralInput();
             if (LineRowInput())
             {
-                cursorIdx = document.Lines[cursorRow - 1].AddStringEnd(document.Lines[cursorRow].RawContent);
-                document.Lines.RemoveAt(cursorRow);
+                string removed = document.Remove(cursorRow);
                 cursorRow--;
+                cursorIdx = CurrentLine.MaxIdx;
+                document.Alter(cursorRow, mut => mut.AddStringEnd(removed));
                 needsRedraw = true;
             }
 
@@ -55,10 +58,12 @@ internal static class Program
         int maxIdx = line.MaxIdx;
         if (Raylib.IsKeyPressed(KeyboardKey.Enter))
         {
-            string next = line.RemoveAllAfterPosition(cursorIdx);
-            document.Lines.Insert(cursorRow + 1, new Line(next));
+            string next = document.Alter(cursorRow, mut => mut.RemoveAllAfterPosition(cursorIdx));
+            document.AddLine(cursorRow + 1, next);
+
             cursorRow++;
             cursorIdx = 0;
+            cursorUpDownX = -1;
             needsRedraw = true;
             return;
         }
@@ -143,21 +148,23 @@ internal static class Program
         while ((input = Raylib.GetCharPressed()) != 0)
         {
             if (input < 32 || input > 125) continue;
-            currentLine.AddCharacter(cursorIdx, (char)input);
+            document.Alter(cursorRow, mut => mut.AddCharacter(cursorIdx, (char)input));
             cursorIdx++;
+            cursorUpDownX = -1;
             needsRedraw = true;
             mouseVisible = false;
         }
         if (KeyOrRepeat(KeyboardKey.Backspace))
         {
             mouseVisible = false;
+            cursorUpDownX = -1;
             if (cursorIdx == 0)
             {
                 return cursorRow != 0;
             }
             else
             {
-                currentLine.RemoveCharacterBackwards(cursorIdx);
+                document.Alter(cursorRow, mut => mut.RemoveCharacterBackwards(cursorIdx));
                 cursorIdx--;
                 needsRedraw = true;
             }
@@ -182,6 +189,8 @@ internal static class Program
         int drawnLines = 0;
         foreach (Line line in document.Lines)
         {
+            string sidebar = $"{line.GlobalRow}";
+            GUI.Text(sidebar, pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length), GUI.TopPad + GUI.TextSize * drawnLines, false, false, false, true);
             foreach (string content in line.Content)
             {
                 GUI.Text(content, pageLeftPad + line.LeftPadPX, GUI.TopPad + GUI.TextSize * drawnLines, false, false, false);
