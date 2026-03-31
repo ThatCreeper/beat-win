@@ -8,8 +8,10 @@ public class Document
 
     public Document()
     {
-        lines = [new Line()];
+        lines = [];
         Lines = lines;
+
+        AddLine(0, "");
     }
 
     public Line AddLine(int index, string content = "")
@@ -18,10 +20,13 @@ public class Document
         if (index == 0)
         {
             line.GlobalRow = 0;
+            line.GlobalPDFRow = 0;
+            line.PDFUnrenderedCache = line.IsUnrenderedPDF(true);
         }
         else
         {
             line.GlobalRow = lines[index - 1].GlobalRow + lines[index - 1].RowCount;
+            line.GlobalPDFRow = lines[index - 1].GlobalPDFRow + lines[index - 1].PDFRowCount;
         }
         lines.Insert(index, line);
         Recombobulate(index);
@@ -32,11 +37,18 @@ public class Document
     void Recombobulate(int index)
     {
         InternallyRecombobulate(index);
+        bool priorUnrendered = index == 0 ? true : lines[index - 1].PDFUnrenderedCache;
+        priorUnrendered = lines[index].PDFUnrenderedCache = lines[index].IsUnrenderedPDF(priorUnrendered);
         int totalRows = lines[index].GlobalRow + lines[index].RowCount;
+        int totalPDFRows = lines[index].GlobalPDFRow + lines[index].PDFRowCount;
         for (int i = index + 1; i < lines.Count; i++)
         {
+            lines[i].PDFUnrenderedCache = lines[i].IsUnrenderedPDF(priorUnrendered);
             lines[i].GlobalRow = totalRows;
+            lines[i].GlobalPDFRow = totalPDFRows;
             totalRows += lines[i].RowCount;
+            totalPDFRows += lines[i].PDFRowCount;
+            priorUnrendered = lines[i].PDFUnrenderedCache;
         }
     }
 

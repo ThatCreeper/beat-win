@@ -2,7 +2,8 @@
 
 public enum LineKind
 {
-    Action
+    Action,
+    PageBreak
 }
 
 public class Line
@@ -10,6 +11,8 @@ public class Line
 
     public List<string> Content;
     public int GlobalRow = 0;
+    public int GlobalPDFRow = 0;
+    public bool PDFUnrenderedCache = false;
     public LineKind Kind = LineKind.Action;
     string rawContent;
 
@@ -17,6 +20,7 @@ public class Line
 
     public bool IsBlank => Content.Count == 1 && Content[0].Length == 0;
     public int RowCount => Content.Count;
+    public int PDFRowCount => PDFUnrenderedCache ? 0 : RowCount;
     public int MaxIdx => Content.Sum(c => c.Length);
 
     public float LeftPad = GUI.ActionLeftPad;
@@ -32,7 +36,15 @@ public class Line
 
     public void InternalRecombobulateDontCall()
     {
+        Kind = DetermineKind();
         Wrap();
+    }
+
+    private LineKind DetermineKind()
+    {
+        if (rawContent == "===")
+            return LineKind.PageBreak;
+        return LineKind.Action;
     }
 
     private void Wrap()
@@ -117,5 +129,15 @@ public class Line
     public void UnsafeSetRawContent(string newValue)
     {
         rawContent = newValue;
+    }
+
+    public bool IsUnrenderedPDF(bool priorUnrendered)
+    {
+        if (Kind == LineKind.PageBreak)
+            return true;
+        if (priorUnrendered && IsBlank)
+            return true;
+
+        return false;
     }
 }

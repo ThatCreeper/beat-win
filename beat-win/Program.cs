@@ -189,7 +189,7 @@ internal static class Program
         int drawnLines = 0;
         foreach (Line line in document.Lines)
         {
-            string sidebar = $"{line.GlobalRow}";
+            string sidebar = $"{line.GlobalPDFRow}";
             GUI.Text(sidebar, pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length), GUI.TopPad + GUI.TextSize * drawnLines, false, false, false, true);
             foreach (string content in line.Content)
             {
