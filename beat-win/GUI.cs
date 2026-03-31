@@ -18,8 +18,14 @@ public static class GUI
     public static Font FontBoldItalic;
 
     public static int TopPad => Inch(1f);
-    public static float ActionLeftPad => 1.25f;
-    public static float ActionRightPad => 1.25f;
+    public static float ActionLeftPad = 1.25f;
+    public static float ActionRightPad = 1.25f;
+    public static float CharacterLeftPad = ActionLeftPad + 2.5f;
+    public static float ParentheticalLeftPad = ActionLeftPad + 2;
+    public static float ParentheticalRightPad = ActionRightPad + 2;
+    public static float DialogueLeftPad = ActionLeftPad + 1.3f;
+    public static float DialogueRightPad = ActionRightPad + 1;
+
     public static int TextSize => Point(12);
     public static float CharacterWidth => FloatInch(0.1f);
 

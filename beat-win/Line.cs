@@ -3,7 +3,10 @@
 public enum LineKind
 {
     Action,
-    PageBreak
+    PageBreak,
+    Character,
+    Parenthetical,
+    Dialogue
 }
 
 public struct LineFragment(string content)
@@ -45,17 +48,57 @@ public class Line
         rawContent = content;
     }
 
-    public void InternalRecombobulateDontCall()
+    public void InternalRecombobulateDontCall(LineKind previousKind)
     {
-        Kind = DetermineKind();
+        Kind = DetermineKind(previousKind);
+        SetPadding();
         WrapAndStyle();
     }
 
-    private LineKind DetermineKind()
+    private LineKind DetermineKind(LineKind previousKind)
     {
         if (rawContent == "===")
             return LineKind.PageBreak;
+        if (rawContent.StartsWith('('))
+            return LineKind.Parenthetical;
+        if ((previousKind == LineKind.Character ||
+            previousKind == LineKind.Parenthetical ||
+            previousKind == LineKind.Dialogue) && !IsBlank)
+            return LineKind.Dialogue;
+        if (rawContent.Length >= 2 && IsRawContentUpper())
+            return LineKind.Character;
         return LineKind.Action;
+    }
+
+    private void SetPadding()
+    {
+        LeftPad = Kind switch
+        {
+            LineKind.Action => GUI.ActionLeftPad,
+            LineKind.PageBreak => GUI.ActionLeftPad,
+            LineKind.Character => GUI.CharacterLeftPad,
+            LineKind.Parenthetical => GUI.ParentheticalLeftPad,
+            LineKind.Dialogue => GUI.DialogueLeftPad,
+        };
+        RightPad = Kind switch
+        {
+            LineKind.Action => GUI.ActionRightPad,
+            LineKind.PageBreak => GUI.ActionRightPad,
+            LineKind.Character => GUI.ActionRightPad,
+            LineKind.Parenthetical => GUI.ParentheticalRightPad,
+            LineKind.Dialogue => GUI.DialogueRightPad,
+        };
+    }
+
+    // Length = 0 returns true
+    private bool IsRawContentUpper()
+    {
+        for (int i = 0; i < rawContent.Length; i++)
+        {
+            if (!Char.IsUpper(rawContent[i]))
+                return false;
+        }
+        return true;
     }
 
     private void WrapAndStyle()

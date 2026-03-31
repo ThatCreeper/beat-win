@@ -73,11 +73,11 @@ public class Document
     void InternallyRecombobulate(int index)
     {
         LineKind oldKind;
-        LineKind newKind;
+        LineKind newKind = index == 0 ? LineKind.Action : lines[index - 1].Kind;
         do
         {
             oldKind = lines[index].Kind;
-            lines[index].InternalRecombobulateDontCall();
+            lines[index].InternalRecombobulateDontCall(newKind);
             newKind = lines[index].Kind;
             index++;
         }
