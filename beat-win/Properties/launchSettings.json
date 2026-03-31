@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "beat-win": {
+      "commandName": "Project",
+      "workingDirectory": "$(SolutionDir)/run"
+    }
+  }
+}
