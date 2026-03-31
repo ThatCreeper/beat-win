@@ -59,7 +59,7 @@ public class Document
 
             if (lines[i].Kind == LineKind.PageBreak)
             {
-                TotalPDFRows = ((int)Math.Floor((float)TotalPDFRows / LinesPerPage) + 1) * LinesPerPage;
+                TotalPDFRows = ((TotalPDFRows / LinesPerPage) + 1) * LinesPerPage;
             }
 
             lines[i].GlobalRow = TotalRows;

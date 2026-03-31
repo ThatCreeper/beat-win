@@ -12,6 +12,7 @@ internal static class Program
     static int cursorIdx = 0;
     static int cursorUpDownX = -1;
     static bool mouseVisible = true;
+    static float scroll = -GUI.TopPad;
 
     static Line CurrentLine => document.Lines[cursorRow];
 
@@ -27,6 +28,7 @@ internal static class Program
 
         while (!Raylib.WindowShouldClose())
         {
+            UpdateScroll();
             UpdateMouse();
 
             LineGeneralInput();
@@ -177,46 +179,6 @@ internal static class Program
     static int PageWidth => GUI.Inch(8.5f);
     static int PageLeftPad => (ScreenWidth - PageWidth) / 2;
 
-    static void Render()
-    {
-        var screenHeight = ScreenHeight;
-        var pageWidth = PageWidth;
-        var pageLeftPad = PageLeftPad;
-
-        Raylib.BeginDrawing();
-        Raylib.ClearBackground(GUI.UIBackground);
-        Raylib.DrawRectangle(pageLeftPad, 0, pageWidth, screenHeight, GUI.Background);
-        int drawnLines = 0;
-        foreach (Line line in document.Lines)
-        {
-            string sidebar = $"{line.GlobalPDFRow}:{line.GlobalRow}";
-            GUI.Text(sidebar, pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length), GUI.TopPad + GUI.TextSize * drawnLines, false, false, false, true);
-            foreach (string content in line.Content)
-            {
-                GUI.Text(content, pageLeftPad + line.LeftPadPX, GUI.TopPad + GUI.TextSize * drawnLines, false, false, false);
-                drawnLines++;
-            }
-        }
-        RenderCaret(pageLeftPad);
-        Raylib.EndDrawing();
-        needsRedraw = false;
-    }
-
-    private static void RenderCaret(int pageLeftPad)
-    {
-        Line line = document.Lines[cursorRow];
-        int rows = line.GetCursorSublineY(cursorIdx);
-        for (int i = 0; i < cursorRow; i++)
-        {
-            rows += document.Lines[i].RowCount;
-        }
-        Raylib.DrawRectangle(
-            GUI.TextWidth(line.GetCursorCharX(cursorIdx)) + pageLeftPad + line.LeftPadPX,
-            rows * GUI.TextSize + GUI.TopPad - GUI.Point(1.5f),
-            GUI.Point(1.5f), GUI.TextSize + GUI.Point(1),
-            GUI.Cursor);
-    }
-
     static unsafe void SetTitleDark(bool dark)
     {
         int value = dark ? 1 : 0;
@@ -241,6 +203,26 @@ internal static class Program
     static bool KeyOrRepeat(KeyboardKey key)
     {
         return Raylib.IsKeyPressed(key) || Raylib.IsKeyPressedRepeat(key);
+    }
+
+    static void UpdateScroll()
+    {
+        var scr = -GUI.FloatInch(Raylib.GetMouseWheelMoveV().Y * 0.5f);
+        if (scr == 0) return;
+        
+        scroll += scr;
+        needsRedraw = true;
+
+        float capY = (document.TotalRows - 1) * GUI.TextSize;
+
+        if (scroll < 0)
+        {
+            scroll = Math.Max(-GUI.TopPad, scroll);
+        }
+        if (scroll > capY)
+        {
+            scroll = Math.Min(scroll, capY);
+        }
     }
 
     static void UpdateMouse()
@@ -302,5 +284,56 @@ internal static class Program
             cursorIdx = document.Lines[cursorRow].MaxIdx;
         }
         needsRedraw = true;
+    }
+
+
+    // RENDER!
+
+    static void Render()
+    {
+        var screenHeight = ScreenHeight;
+        var pageWidth = PageWidth;
+        var pageLeftPad = PageLeftPad;
+
+        Raylib.BeginDrawing();
+        Raylib.ClearBackground(GUI.UIBackground);
+        Raylib.DrawRectangle(pageLeftPad, 0, pageWidth, screenHeight, GUI.Background);
+        int drawnLines = 0;
+        foreach (Line line in document.Lines)
+        {
+            string sidebar = $"{line.GlobalPDFRow}:{line.GlobalRow}";
+            GUI.Text(
+                sidebar,
+                pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
+                GUI.TextSize * drawnLines - (int)scroll,
+                false, false, false, true);
+            foreach (string content in line.Content)
+            {
+                GUI.Text(
+                    content,
+                    pageLeftPad + line.LeftPadPX,
+                    GUI.TextSize * drawnLines - (int)scroll,
+                    false, false, false);
+                drawnLines++;
+            }
+        }
+        RenderCaret(pageLeftPad);
+        Raylib.EndDrawing();
+        needsRedraw = false;
+    }
+
+    private static void RenderCaret(int pageLeftPad)
+    {
+        Line line = document.Lines[cursorRow];
+        int rows = line.GetCursorSublineY(cursorIdx);
+        for (int i = 0; i < cursorRow; i++)
+        {
+            rows += document.Lines[i].RowCount;
+        }
+        Raylib.DrawRectangle(
+            GUI.TextWidth(line.GetCursorCharX(cursorIdx)) + pageLeftPad + line.LeftPadPX,
+            rows * GUI.TextSize - GUI.Point(1.5f) - (int)scroll,
+            GUI.Point(1.5f), GUI.TextSize + GUI.Point(1),
+            GUI.Cursor);
     }
 }
