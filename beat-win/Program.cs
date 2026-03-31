@@ -110,32 +110,48 @@ internal static class Program
         }
         if (KeyOrRepeat(KeyboardKey.Up))
         {
-            if (cursorRow == 0)
+            int lineY = line.GetCursorSublineY(cursorIdx);
+            if (cursorRow == 0 && lineY == 0)
             {
                 cursorIdx = 0;
             }
             else
             {
                 cursorUpDownX = cursorUpDownX != -1 ? cursorUpDownX : line.GetCursorCharX(cursorIdx);
-                cursorRow--;
-                line = document.Lines[cursorRow];
-                cursorIdx = line.GetIndex(cursorUpDownX, line.RowCount - 1);
+                if (lineY == 0)
+                {
+                    cursorRow--;
+                    line = document.Lines[cursorRow];
+                    cursorIdx = line.GetIndex(cursorUpDownX, line.RowCount - 1);
+                }
+                else
+                {
+                    cursorIdx = line.GetIndex(cursorUpDownX, lineY - 1);
+                }
             }
             needsRedraw = true;
             return;
         }
         if (KeyOrRepeat(KeyboardKey.Down))
         {
-            if (cursorRow == document.Lines.Count - 1)
+            int lineY = line.GetCursorSublineY(cursorIdx);
+            if (cursorRow == document.Lines.Count - 1 && lineY == line.RowCount - 1)
             {
                 cursorIdx = line.MaxIdx;
             }
             else
             {
                 cursorUpDownX = cursorUpDownX != -1 ? cursorUpDownX : line.GetCursorCharX(cursorIdx);
-                cursorRow++;
-                line = document.Lines[cursorRow];
-                cursorIdx = line.GetIndex(cursorUpDownX, line.RowCount - 1);
+                if (lineY == line.RowCount - 1)
+                {
+                    cursorRow++;
+                    line = document.Lines[cursorRow];
+                    cursorIdx = line.GetIndex(cursorUpDownX, 0);
+                }
+                else
+                {
+                    cursorIdx = line.GetIndex(cursorUpDownX, lineY + 1);
+                }
             }
             needsRedraw = true;
             return;
@@ -272,7 +288,9 @@ internal static class Program
             if (row + rc > pY)
             {
                 cursorRow = i;
-                cursorIdx = line.GetIndex((int)Math.Round((x - line.LeftPadPX) / GUI.CharacterWidth), pY - row);
+                cursorIdx = line.GetIndex(
+                    Math.Max(0,(int)Math.Round((x - line.LeftPadPX) / GUI.CharacterWidth)),
+                    pY - row);
                 hit = true;
                 break;
             }
@@ -307,13 +325,17 @@ internal static class Program
                 pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
                 GUI.TextSize * drawnLines - (int)scroll,
                 false, false, false, true);
-            foreach (string content in line.Content)
+            foreach (List<LineFragment> fragments in line.Content)
             {
-                GUI.Text(
-                    content,
-                    pageLeftPad + line.LeftPadPX,
-                    GUI.TextSize * drawnLines - (int)scroll,
-                    false, false, false);
+                int xOffset = 0;
+                foreach (LineFragment fragment in fragments)
+                {
+                    xOffset += GUI.Text(
+                        fragment.Content,
+                        pageLeftPad + line.LeftPadPX + xOffset,
+                        GUI.TextSize * drawnLines - (int)scroll,
+                        fragment.Italic, fragment.Bold, fragment.Underline, fragment.Syntax);
+                }
                 drawnLines++;
             }
         }

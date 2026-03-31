@@ -66,19 +66,21 @@ public static class GUI
     public static int TextWidth(int length) => (int)(CharacterWidth * length);
     public static int TextWidth(string text) => TextWidth(text.Length);
 
-    public static void Text(string text, int x, int y, bool italic, bool bold, bool underline, bool syntax = false)
+    public static int Text(string text, int x, int y, bool italic, bool bold, bool underline, bool syntax = false)
     {
         Font font = GetFont(italic, bold);
         int size = TextSize;
         float chWid = CharacterWidth;
         Color col = syntax ? Syntax : Foreground;
+        int width = TextWidth(text);
         if (underline)
         {
-            Raylib.DrawRectangle(x, y + size, TextWidth(text), Point(1), Foreground);
+            Raylib.DrawRectangle(x - Point(2), y + size, width + Point(4), Point(0.5f), Foreground);
         }
         for (int i = 0; i < text.Length; i++)
         {
             Raylib.DrawTextCodepoint(font, text[i], new System.Numerics.Vector2(x + chWid * i, y), size, col);
         }
+        return width;
     }
 }
