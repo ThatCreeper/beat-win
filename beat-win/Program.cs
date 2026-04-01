@@ -423,12 +423,12 @@ internal static class Program
         int scrollBarPadding = ScrollBarPadding;
         int scrollBarArea = ScreenHeight - scrollBarPadding * 2;
         int scrollBarWidth = GUI.Point(3);
-        int scrollBarHeight = (int)(50 * scrollBarArea / maxScrollDistance);
+        int scrollBarHeight = (int)(ScreenHeight * scrollBarArea / (maxScrollDistance + ScreenHeight));
         int scrollBarTopY = scrollBarPadding;
         int scrollBarBottomY = ScreenHeight - scrollBarPadding - scrollBarHeight;
         int scrollBarX = ScreenWidth - scrollBarPadding - scrollBarWidth;
 
-        float scrollPercentage = (GetScrollPX() + GUI.TopPad) / maxScrollDistance;
+        float scrollPercentage = (GetScrollPX() + GUI.TopPad) / (maxScrollDistance);
 
         int scrollBarY = (int)MathHelpers.Lerp(scrollBarTopY, scrollBarBottomY, scrollPercentage);
 
@@ -479,7 +479,9 @@ internal static class Program
         {
             if (line.Kind != LineKind.Note || !line.IsMarker) continue;
 
-            int y = (int)MathHelpers.Lerp(topY, bottomY, (float)line.GlobalRow / document.TotalRows);
+            float factor = (float)line.GlobalRow / (document.TotalRows + ScreenHeight / GUI.TextSize - 5);
+
+            int y = (int)MathHelpers.Lerp(topY, bottomY, factor);
 
             Raylib.DrawCircle(x, y, radius, Raylib.Fade(GUI.Note, 0.5f));
         }
