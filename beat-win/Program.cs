@@ -14,6 +14,7 @@ internal static class Program
     static bool mouseVisible = true;
     static float scroll = -GUI.TopPad;
     static float maxScroll = 10_000;
+    static int scrollMinVisible = 0;
 
     static float renderCursorX = 0;
     static float renderCursorY = 0;
@@ -44,6 +45,8 @@ internal static class Program
                 document.Alter(cursorRow, mut => mut.AddStringEnd(removed));
                 needsRedraw = true;
             }
+
+            ClampScroll();
 
             if (needsRedraw)
             {
@@ -234,14 +237,53 @@ internal static class Program
         scroll += scr;
         needsRedraw = true;
 
-        if (scroll < 0)
+        while (scroll < 0)
         {
-            scroll = Math.Max(-GUI.TopPad, scroll);
+            if (scrollMinVisible == 0)
+            {
+                scroll = Math.Max(-GUI.TopPad, scroll);
+                break;
+            }
+            else
+            {
+                scrollMinVisible--;
+                scroll += GUI.TextSize * document.Lines[scrollMinVisible].RowCount;
+            }
         }
-        if (scroll > maxScroll)
+        Line minVisibleLine = document.Lines[scrollMinVisible];
+        float scrollMinHeight = GUI.TextSize * (minVisibleLine.GlobalRow + minVisibleLine.RowCount);
+        if (scroll > maxScroll - scrollMinHeight)
         {
-            scroll = Math.Min(scroll, maxScroll);
+            scroll = Math.Min(scroll, maxScroll - scrollMinHeight);
         }
+        while (scroll > GUI.TextSize * document.Lines[scrollMinVisible].RowCount)
+        {
+            if (scrollMinVisible >= document.Lines.Count - 1)
+            {
+                break;
+            }
+            scroll -= GUI.TextSize * (document.Lines[scrollMinVisible].RowCount);
+            scrollMinVisible++;
+        }
+    }
+
+    static float GetScrollPX()
+    {
+        Line minVisibleLine = document.Lines[scrollMinVisible];
+        return scroll + GUI.TextSize * (minVisibleLine.GlobalRow + minVisibleLine.RowCount);
+    }
+
+    static int GetMaxVisibleLines()
+    {
+        return Math.Min(
+            (int)Math.Ceiling((float)ScreenHeight / GUI.TextSize) + 2,
+            document.Lines.Count - scrollMinVisible);
+    }
+
+    // Should make me not ever have to deal with this.
+    static void ClampScroll()
+    {
+        scrollMinVisible = Math.Clamp(scrollMinVisible, 0, document.Lines.Count - 1);
     }
 
     static void UpdateMouse()
@@ -249,7 +291,7 @@ internal static class Program
         var pageWidth = PageWidth;
         var pageLeftPad = PageLeftPad;
         var mX = Raylib.GetMouseX() - pageLeftPad;
-        var mY = Raylib.GetMouseY() - GUI.TopPad;
+        var mY = Raylib.GetMouseY() + (int)GetScrollPX();
 
         if (Raylib.GetMouseDelta().LengthSquared() > 0)
         {
@@ -324,14 +366,15 @@ internal static class Program
         Raylib.BeginDrawing();
         Raylib.ClearBackground(GUI.UIBackground);
         Raylib.DrawRectangle(pageLeftPad, 0, pageWidth, screenHeight, GUI.Background);
-        int drawnLines = 0;
-        foreach (Line line in document.Lines)
+        int drawnLines = document.Lines[scrollMinVisible].GlobalRow;
+        for (int lineIdx = scrollMinVisible; lineIdx < scrollMinVisible + GetMaxVisibleLines(); lineIdx++)
         {
+            Line line = document.Lines[lineIdx];
             string sidebar = $"{line.GlobalPDFRow}:{line.GlobalRow}";
             GUI.Text(
                 sidebar,
                 pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
-                GUI.TextSize * drawnLines - (int)scroll,
+                GUI.TextSize * drawnLines - (int)GetScrollPX(),
                 false, false, false, true);
             foreach (List<LineFragment> fragments in line.Content)
             {
@@ -341,7 +384,7 @@ internal static class Program
                     xOffset += GUI.Text(
                         fragment.Content,
                         pageLeftPad + line.LeftPadPX + xOffset,
-                        GUI.TextSize * drawnLines - (int)scroll,
+                        GUI.TextSize * drawnLines - (int)GetScrollPX(),
                         fragment.Italic, fragment.Bold, fragment.Underline, fragment.Syntax);
                 }
                 drawnLines++;
@@ -365,7 +408,7 @@ internal static class Program
         Raylib.DrawRectangleRounded(
             new Rectangle(
                 GUI.TextWidth(line.GetCursorCharX(cursorIdx)) + pageLeftPad + line.LeftPadPX - GUI.Point(1),
-                rows* GUI.TextSize - GUI.Point(1.5f) - (int)scroll,
+                rows* GUI.TextSize - GUI.Point(1.5f) - (int)GetScrollPX(),
                 GUI.Point(1.5f),
                 GUI.TextSize + GUI.Point(1)),
             0.8f,
@@ -385,7 +428,7 @@ internal static class Program
         int scrollBarBottomY = ScreenHeight - scrollBarPadding - scrollBarHeight;
         int scrollBarX = ScreenWidth - scrollBarPadding - scrollBarWidth;
 
-        float scrollPercentage = (scroll + GUI.TopPad) / maxScrollDistance;
+        float scrollPercentage = (GetScrollPX() + GUI.TopPad) / maxScrollDistance;
 
         int scrollBarY = (int)MathHelpers.Lerp(scrollBarTopY, scrollBarBottomY, scrollPercentage);
 
