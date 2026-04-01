@@ -449,7 +449,7 @@ internal static class Program
             // Page numbers!
             if (!line.PDFUnrenderedCache && (line.GlobalPDFRow % Document.LinesPerPage) == 0)
             {
-                string sidebar = $"{(line.GlobalPDFRow / Document.LinesPerPage) + 1}";
+                string sidebar = $"{(line.GlobalPDFRow / Document.LinesPerPage) + 1}.";
                 GUI.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
@@ -464,7 +464,7 @@ internal static class Program
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
-                    false, false, false, GUI.Syntax, true);
+                    false, false, false, GUI.Foreground, false);
             }
             // Markers!
             if (line.Kind == LineKind.Note && line.IsMarker)
