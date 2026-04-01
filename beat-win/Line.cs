@@ -128,8 +128,8 @@ public class Line
             LineKind.Preamble => GUI.DialogueLeftPad,
             LineKind.Nonexistant => 0,
             // These break for multiline wrapped things so just don't do that thx
-            LineKind.Right => 8.5f - GUI.ActionRightPad - rawContent.Length * 0.1f,
-            LineKind.Center => (8.5f - rawContent.Length * 0.1f) / 2,
+            LineKind.Right => 8.5f - GUI.ActionRightPad - rawContent.Length * GUI.CharacterWidthInch,
+            LineKind.Center => (8.5f - rawContent.Length * GUI.CharacterWidthInch) / 2,
             _ => GUI.ActionLeftPad
         };
         RightPad = Kind switch
@@ -170,7 +170,7 @@ public class Line
         Content.Clear();
         ContentLengths.Clear();
 
-        int lineLength = (int)((8.5 - LeftPad - RightPad) * 10);
+        int lineLength = (int)((8.5 - LeftPad - RightPad) / GUI.CharacterWidthInch);
         int start = 0;
         int x = 0;
 

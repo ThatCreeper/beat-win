@@ -29,7 +29,8 @@ public static class GUI
     public static float DialogueRightPad = ActionRightPad + 1;
 
     public static int TextSize => Point(12);
-    public static float CharacterWidth => FloatInch(0.1f);
+    public static float CharacterWidthInch = 0.1f;
+    public static float CharacterWidth => FloatInch(CharacterWidthInch);
 
     static float StockDPI = 96;
     static float InchToPx = StockDPI;
@@ -74,23 +75,6 @@ public static class GUI
 
     public static int TextWidth(int length) => (int)(CharacterWidth * length);
     public static int TextWidth(string text) => TextWidth(text.Length);
-
-    public static int Text(string text, int x, int y, bool italic, bool bold, bool underline, Color color, bool syntax)
-    {
-        Font font = GetFont(italic, bold);
-        int size = TextSize;
-        float chWid = CharacterWidth;
-        int width = TextWidth(text);
-        if (underline)
-        {
-            Raylib.DrawRectangle(x - Point(2), y + size, width + Point(4), Point(0.5f), color);
-        }
-        for (int i = 0; i < text.Length; i++)
-        {
-            Raylib.DrawTextCodepoint(font, text[i], new System.Numerics.Vector2(x + chWid * i, y), size, syntax ? Syntax : color);
-        }
-        return width;
-    }
 
     public static bool SaveConfirmDialog()
     {

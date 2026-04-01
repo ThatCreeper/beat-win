@@ -8,17 +8,14 @@ namespace beat_win;
 internal static class Program
 {
     static Document document = new();
+    static Caret caret = new(0, 0, document);
     static bool needsRedraw = true;
 
-    static int cursorRow = 0;
-    static int cursorIdx = 0;
-    static int cursorUpDownX = -1;
     static bool mouseVisible = true;
     static float scroll = -GUI.TopPad;
     static float maxScroll = 10_000;
     static int scrollMinVisible = 0;
 
-    static Line CurrentLine => document.Lines[cursorRow];
 
     [STAThread]
     static void Main(string[] args)
@@ -47,14 +44,7 @@ internal static class Program
             }
             else
             {
-                if (LineRowInput())
-                {
-                    string removed = document.Remove(cursorRow);
-                    cursorRow--;
-                    cursorIdx = CurrentLine.MaxIdx;
-                    document.Alter(cursorRow, mut => mut.AddStringEnd(removed));
-                    needsRedraw = true;
-                }
+                LineRowInput();
             }
 
             ClampScroll();
@@ -83,122 +73,47 @@ internal static class Program
 
     static void LineGeneralInput()
     {
-        Line line = document.Lines[cursorRow];
-        int maxIdx = line.MaxIdx;
         if (Raylib.IsKeyPressed(KeyboardKey.Enter))
         {
-            string next = document.Alter(cursorRow, mut => mut.RemoveAllAfterPosition(cursorIdx));
-            document.AddLine(cursorRow + 1, next);
-
-            cursorRow++;
-            cursorIdx = 0;
-            cursorUpDownX = -1;
+            caret.Insert("\n");
             needsRedraw = true;
-            return;
         }
         if (Raylib.IsKeyPressed(KeyboardKey.Tab))
         {
+            Line line = caret.EndLine;
             if (line.Kind == LineKind.Character || line.Kind == LineKind.Dialogue)
             {
-                document.AddLine(cursorRow + 1, "()");
-                cursorRow++;
-                cursorIdx = 1;
-                cursorUpDownX = -1;
+                document.AddLine(caret.SelectionEnd.Row + 1, "()");
+                caret.SetCaretIndex(caret.SelectionEnd.Row, 1);
                 needsRedraw = true;
             }
             else if (line.Kind == LineKind.Parenthetical)
             {
-                document.AddLine(cursorRow + 1, "");
-                cursorRow++;
-                cursorIdx = 0;
-                cursorUpDownX = -1;
+                document.AddLine(caret.SelectionEnd.Row + 1, "");
+                caret.SetCaretIndex(caret.SelectionEnd.Row, 0);
                 needsRedraw = true;
             }
         }
 
         if (KeyOrRepeat(KeyboardKey.Left))
         {
-            cursorIdx--;
-            if (cursorIdx < 0)
-            {
-                if (cursorRow > 0)
-                {
-                    cursorRow--;
-                    cursorIdx = document.Lines[cursorRow].MaxIdx;
-                }
-                else
-                {
-                    cursorIdx = 0;
-                }
-            }
-            cursorUpDownX = -1;
+            caret.MoveCaretX(-1);
             needsRedraw = true;
-            return;
         }
         if (KeyOrRepeat(KeyboardKey.Right))
         {
-            cursorIdx++;
-            if (cursorIdx > maxIdx)
-            {
-                if (document.Lines.Count > cursorRow + 1)
-                {
-                    cursorIdx = 0;
-                    cursorRow++;
-                }
-                else
-                {
-                    cursorIdx = maxIdx;
-                }
-            }
-            cursorUpDownX = -1;
+            caret.MoveCaretX(1);
             needsRedraw = true;
-            return;
         }
         if (KeyOrRepeat(KeyboardKey.Up))
         {
-            int lineY = CurrentLine.GetCursorSublineY(cursorIdx);
-            if (cursorRow == 0 && lineY == 0)
-            {
-                cursorIdx = 0;
-            }
-            else
-            {
-                cursorUpDownX = cursorUpDownX != -1 ? cursorUpDownX : CurrentLine.GetCursorCharX(cursorIdx);
-                if (lineY == 0)
-                {
-                    cursorRow--;
-                    cursorIdx = CurrentLine.GetIndex(cursorUpDownX, CurrentLine.RowCount - 1);
-                }
-                else
-                {
-                    cursorIdx = CurrentLine.GetIndex(cursorUpDownX, lineY - 1);
-                }
-            }
+            caret.MoveCaretY(-1);
             needsRedraw = true;
-            return;
         }
         if (KeyOrRepeat(KeyboardKey.Down))
         {
-            int lineY = CurrentLine.GetCursorSublineY(cursorIdx);
-            if (cursorRow == document.Lines.Count - 1 && lineY == CurrentLine.RowCount - 1)
-            {
-                cursorIdx = CurrentLine.MaxIdx;
-            }
-            else
-            {
-                cursorUpDownX = cursorUpDownX != -1 ? cursorUpDownX : CurrentLine.GetCursorCharX(cursorIdx);
-                if (lineY == CurrentLine.RowCount - 1)
-                {
-                    cursorRow++;
-                    cursorIdx = CurrentLine.GetIndex(cursorUpDownX, 0);
-                }
-                else
-                {
-                    cursorIdx = CurrentLine.GetIndex(cursorUpDownX, lineY + 1);
-                }
-            }
+            caret.MoveCaretY(1);
             needsRedraw = true;
-            return;
         }
     }
 
@@ -224,12 +139,10 @@ internal static class Program
     {
         scrollMinVisible = 0;
         scroll = -GUI.TopPad;
-        cursorUpDownX = -1;
-        cursorRow = 0;
-        cursorIdx = 0;
         needsRedraw = true;
         document.AskSave();
         document = doc;
+        caret = new Caret(0, 0, document);
     }
 
     static void FileLoader()
@@ -243,35 +156,22 @@ internal static class Program
     }
 
     // Returns true if the line should be removed
-    static bool LineRowInput()
+    static void LineRowInput()
     {
-        Line currentLine = document.Lines[cursorRow];
         int input;
         while ((input = Raylib.GetCharPressed()) != 0)
         {
             if (input < 32 || input > 125) continue;
-            document.Alter(cursorRow, mut => mut.AddCharacter(cursorIdx, (char)input));
-            cursorIdx++;
-            cursorUpDownX = -1;
+            caret.Insert((char)input);
             needsRedraw = true;
             mouseVisible = false;
         }
         if (KeyOrRepeat(KeyboardKey.Backspace))
         {
             mouseVisible = false;
-            cursorUpDownX = -1;
-            if (cursorIdx == 0)
-            {
-                return cursorRow != 0;
-            }
-            else
-            {
-                document.Alter(cursorRow, mut => mut.RemoveCharacterBackwards(cursorIdx));
-                cursorIdx--;
-                needsRedraw = true;
-            }
+            caret.DeleteBackspace();
+            needsRedraw = true;
         }
-        return false;
     }
 
     static int ScreenHeight => Raylib.GetScreenHeight();
@@ -399,29 +299,30 @@ internal static class Program
 
     static void SelectPixelXY(int x, int y)
     {
-        int pY = y / GUI.TextSize;
-        int row = 0;
-        bool hit = false;
-        for (int i = 0; i < document.Lines.Count; i++)
-        {
-            Line line = document.Lines[i];
-            int rc = line.RowCount;
-            if (row + rc > pY)
-            {
-                cursorRow = i;
-                cursorIdx = line.GetIndex(
-                    (int)Math.Round((x - line.LeftPadPX) / GUI.CharacterWidth),
-                    pY - row);
-                hit = true;
-                break;
-            }
-            row += rc;
-        }
-        if (!hit)
-        {
-            cursorRow = document.Lines.Count - 1;
-            cursorIdx = CurrentLine.GetIndex((int)Math.Round((x - CurrentLine.LeftPadPX) / GUI.CharacterWidth), CurrentLine.RowCount - 1);
-        }
+        throw new NotImplementedException();
+        //int pY = y / GUI.TextSize;
+        //int row = 0;
+        //bool hit = false;
+        //for (int i = 0; i < document.Lines.Count; i++)
+        //{
+        //    Line line = document.Lines[i];
+        //    int rc = line.RowCount;
+        //    if (row + rc > pY)
+        //    {
+        //        cursorRow = i;
+        //        cursorIdx = line.GetIndex(
+        //            (int)Math.Round((x - line.LeftPadPX) / GUI.CharacterWidth),
+        //            pY - row);
+        //        hit = true;
+        //        break;
+        //    }
+        //    row += rc;
+        //}
+        //if (!hit)
+        //{
+        //    cursorRow = document.Lines.Count - 1;
+        //    cursorIdx = CurrentLine.GetIndex((int)Math.Round((x - CurrentLine.LeftPadPX) / GUI.CharacterWidth), CurrentLine.RowCount - 1);
+        //}
         needsRedraw = true;
     }
 
@@ -442,6 +343,9 @@ internal static class Program
         Raylib.BeginDrawing();
         Raylib.ClearBackground(GUI.UIBackground);
         Raylib.DrawRectangle(pageLeftPad, 0, pageWidth, screenHeight, GUI.Background);
+
+        caret.RenderSelection();
+        
         int drawnLines = document.Lines[scrollMinVisible].GlobalRow;
         for (int lineIdx = scrollMinVisible; lineIdx < scrollMinVisible + GetMaxVisibleLines(); lineIdx++)
         {
@@ -450,7 +354,7 @@ internal static class Program
             if (!line.PDFUnrenderedCache && (line.GlobalPDFRow % Document.LinesPerPage) == 0)
             {
                 string sidebar = $"{(line.GlobalPDFRow / Document.LinesPerPage) + 1}.";
-                GUI.Text(
+                RenderHelper.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -460,7 +364,7 @@ internal static class Program
             if (line.Kind == LineKind.Scene)
             {
                 string sidebar = $"{line.GlobalScene}";
-                GUI.Text(
+                RenderHelper.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -478,7 +382,7 @@ internal static class Program
 
                 foreach (LineFragment fragment in fragments)
                 {
-                    xOffset += GUI.Text(
+                    xOffset += RenderHelper.Text(
                         fragment.Content,
                         pageLeftPad + line.LeftPadPX + xOffset,
                         GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -489,37 +393,11 @@ internal static class Program
                 drawnLines++;
             }
         }
-        RenderCaret(pageLeftPad);
+        caret.RenderCaret(pageLeftPad, (int)GetScrollPX());
         RenderScrollBar();
         RenderMarkerHints();
         Raylib.EndDrawing();
         needsRedraw = false;
-    }
-
-    private static void RenderCaret(int pageLeftPad)
-    {
-        Line line = CurrentLine;
-        int rows = line.GetCursorSublineY(cursorIdx);
-        for (int i = 0; i < cursorRow; i++)
-        {
-            rows += document.Lines[i].RowCount;
-        }
-
-        int linePad = line.LeftPadPX;
-        if (line.IsBlank && cursorRow != 0 && document.Lines[cursorRow - 1].DoesDialogueComeNext)
-        {
-            linePad = GUI.Inch(GUI.DialogueLeftPad);
-        }
-
-        Raylib.DrawRectangleRounded(
-            new Rectangle(
-                GUI.TextWidth(line.GetCursorCharX(cursorIdx)) + pageLeftPad + linePad - GUI.Point(1),
-                rows* GUI.TextSize - GUI.Point(1.5f) - (int)GetScrollPX(),
-                GUI.Point(1.5f),
-                GUI.TextSize + GUI.Point(1)),
-            0.8f,
-            0,
-            GUI.Cursor);
     }
 
     static int ScrollBarPadding => GUI.Point(5);
