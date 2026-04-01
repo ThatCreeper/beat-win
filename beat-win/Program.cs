@@ -9,7 +9,6 @@ internal static class Program
 {
     static Document document = new();
     static Caret caret = new(0, 0, document);
-    static bool needsRedraw = true;
 
     static bool mouseVisible = true;
     static float scroll = -GUI.TopPad;
@@ -28,7 +27,7 @@ internal static class Program
         GUI.Load();
         ResizeCenter(GUI.Inch(10), GUI.Inch(6));
 
-        document.InsertMultilineAtCaret(0, 0, "No file is loaded.\n\nDrop a file onto the window to continue.\n\nChanges in this document will not be saved.");
+        document.InsertMultilineAtCaret(0, 0, "No file is loaded.\n\nDrop a file onto the window to continue.\n\nChanges in this document will not and can not be saved.");
 
         while (!Raylib.WindowShouldClose())
         {
@@ -49,7 +48,7 @@ internal static class Program
 
             ClampScroll();
 
-            if (needsRedraw)
+            if (RenderHelper.NeedsRender)
             {
                 UpdateMaxScroll();
                 Render();
@@ -68,7 +67,7 @@ internal static class Program
 
     static void SetTitleBarText()
     {
-        Raylib.SetWindowTitle($"(beat) {document.Name()}");
+        Raylib.SetWindowTitle($"(beat) {document.Name()} {(document.Edited ? "(Unsaved)" : "")}");
     }
 
     static void LineGeneralInput()
@@ -76,7 +75,6 @@ internal static class Program
         if (Raylib.IsKeyPressed(KeyboardKey.Enter))
         {
             caret.Insert("\n");
-            needsRedraw = true;
         }
         if (Raylib.IsKeyPressed(KeyboardKey.Tab))
         {
@@ -85,13 +83,11 @@ internal static class Program
             {
                 document.AddLine(caret.SelectionEnd.Row + 1, "()");
                 caret.SetCaretIndex(caret.SelectionEnd.Row, 1);
-                needsRedraw = true;
             }
             else if (line.Kind == LineKind.Parenthetical)
             {
                 document.AddLine(caret.SelectionEnd.Row + 1, "");
                 caret.SetCaretIndex(caret.SelectionEnd.Row, 0);
-                needsRedraw = true;
             }
         }
 
@@ -103,7 +99,6 @@ internal static class Program
                 caret.MoveEndX(-1);
             else
                 caret.MoveCaretX(-1);
-            needsRedraw = true;
         }
         if (KeyOrRepeat(KeyboardKey.Right))
         {
@@ -111,7 +106,6 @@ internal static class Program
                 caret.MoveEndX(1);
             else
                 caret.MoveCaretX(1);
-            needsRedraw = true;
         }
         if (KeyOrRepeat(KeyboardKey.Up))
         {
@@ -119,7 +113,6 @@ internal static class Program
                 caret.MoveEndY(-1);
             else
                 caret.MoveCaretY(-1);
-            needsRedraw = true;
         }
         if (KeyOrRepeat(KeyboardKey.Down))
         {
@@ -127,7 +120,6 @@ internal static class Program
                 caret.MoveEndY(1);
             else
                 caret.MoveCaretY(1);
-            needsRedraw = true;
         }
     }
 
@@ -153,7 +145,7 @@ internal static class Program
     {
         scrollMinVisible = 0;
         scroll = -GUI.TopPad;
-        needsRedraw = true;
+        RenderHelper.NeedsRender = true;
         document.AskSave();
         document = doc;
         caret = new Caret(0, 0, document);
@@ -177,14 +169,12 @@ internal static class Program
         {
             if (input < 32 || input > 125) continue;
             caret.Insert((char)input);
-            needsRedraw = true;
             mouseVisible = false;
         }
         if (KeyOrRepeat(KeyboardKey.Backspace))
         {
             mouseVisible = false;
             caret.DeleteBackspace();
-            needsRedraw = true;
         }
     }
 
@@ -225,7 +215,7 @@ internal static class Program
         if (scr == 0) return;
         
         scroll += scr;
-        needsRedraw = true;
+        RenderHelper.NeedsRender = true;
 
         while (scroll < 0)
         {
@@ -336,8 +326,6 @@ internal static class Program
 
             break;
         }
-
-        needsRedraw = true;
     }
 
     static void UpdateMaxScroll()
@@ -411,7 +399,7 @@ internal static class Program
         RenderScrollBar();
         RenderMarkerHints();
         Raylib.EndDrawing();
-        needsRedraw = false;
+        RenderHelper.NeedsRender = false;
     }
 
     static int ScrollBarPadding => GUI.Point(5);

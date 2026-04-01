@@ -6,6 +6,7 @@ public class Document
     public int TotalRows = 0;
     public int TotalPDFRows = 0;
     public int TotalScenes = 0;
+    public bool Edited = false;
 
     List<Line> lines;
 
@@ -21,6 +22,8 @@ public class Document
 
     public Line AddLine(int index, string content = "")
     {
+        Edited = true;
+        RenderHelper.NeedsRender = true;
         Line line = new(content);
         if (index == 0)
         {
@@ -101,12 +104,16 @@ public class Document
     // people can figure this out.
     public void Alter(int index, Action<LineMutator> action)
     {
+        Edited = true;
+        RenderHelper.NeedsRender = true;
         action(new LineMutator(lines[index]));
         Recombobulate(index);
     }
 
     public string Alter(int index, Func<LineMutator, string> action)
     {
+        Edited = true;
+        RenderHelper.NeedsRender = true;
         string result = action(new LineMutator(lines[index]));
         Recombobulate(index);
         return result;
@@ -114,6 +121,8 @@ public class Document
 
     public string Remove(int index)
     {
+        Edited = true;
+        RenderHelper.NeedsRender = true;
         string value = lines[index].RawContent;
         lines.RemoveAt(index);
         return value;
@@ -123,7 +132,10 @@ public class Document
     public int InsertMultilineAtCaret(int row, int index, string[] lines)
     {
         if (lines.Length == 0) return index;
-        
+
+        Edited = true;
+        RenderHelper.NeedsRender = true;
+
         if (lines.Length == 1)
         {
             Alter(row, mut => mut.AddString(index, lines[0]));
@@ -173,6 +185,7 @@ public class Document
     public void AskSave()
     {
         if (!CanSave()) return;
+        if (!Edited) return;
         if (GUI.SaveConfirmDialog())
         {
             Save();

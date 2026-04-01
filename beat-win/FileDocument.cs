@@ -16,6 +16,7 @@ public class FileDocument : Document
         name = System.IO.Path.GetFileName(Path);
         string[] lines = File.ReadAllLines(Path);
         InsertMultilineAtCaret(0, 0, lines);
+        Edited = false;
     }
 
     public static FileDocument? NewWithDialog()
@@ -54,6 +55,8 @@ public class FileDocument : Document
     {
         string serialized = String.Join("\n", Lines.Select(line => line.RawContent));
         File.WriteAllText(Path, serialized);
+        Edited = false;
+        RenderHelper.NeedsRender = true;
     }
 
     public override string Name()
