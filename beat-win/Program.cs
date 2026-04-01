@@ -13,6 +13,10 @@ internal static class Program
     static int cursorUpDownX = -1;
     static bool mouseVisible = true;
     static float scroll = -GUI.TopPad;
+    static float maxScroll = 10_000;
+
+    static float renderCursorX = 0;
+    static float renderCursorY = 0;
 
     static Line CurrentLine => document.Lines[cursorRow];
 
@@ -43,6 +47,7 @@ internal static class Program
 
             if (needsRedraw)
             {
+                UpdateMaxScroll();
                 Render();
             }
             else
@@ -229,15 +234,13 @@ internal static class Program
         scroll += scr;
         needsRedraw = true;
 
-        float capY = (document.TotalRows - 1) * GUI.TextSize;
-
         if (scroll < 0)
         {
             scroll = Math.Max(-GUI.TopPad, scroll);
         }
-        if (scroll > capY)
+        if (scroll > maxScroll)
         {
-            scroll = Math.Min(scroll, capY);
+            scroll = Math.Min(scroll, maxScroll);
         }
     }
 
@@ -304,6 +307,11 @@ internal static class Program
         needsRedraw = true;
     }
 
+    static void UpdateMaxScroll()
+    {
+        maxScroll = (document.TotalRows - 1) * GUI.TextSize;
+    }
+
 
     // RENDER!
 
@@ -340,6 +348,7 @@ internal static class Program
             }
         }
         RenderCaret(pageLeftPad);
+        RenderScrollBar();
         Raylib.EndDrawing();
         needsRedraw = false;
     }
@@ -352,10 +361,42 @@ internal static class Program
         {
             rows += document.Lines[i].RowCount;
         }
-        Raylib.DrawRectangle(
-            GUI.TextWidth(line.GetCursorCharX(cursorIdx)) + pageLeftPad + line.LeftPadPX,
-            rows * GUI.TextSize - GUI.Point(1.5f) - (int)scroll,
-            GUI.Point(1.5f), GUI.TextSize + GUI.Point(1),
+
+        Raylib.DrawRectangleRounded(
+            new Rectangle(
+                GUI.TextWidth(line.GetCursorCharX(cursorIdx)) + pageLeftPad + line.LeftPadPX - GUI.Point(1),
+                rows* GUI.TextSize - GUI.Point(1.5f) - (int)scroll,
+                GUI.Point(1.5f),
+                GUI.TextSize + GUI.Point(1)),
+            0.8f,
+            0,
             GUI.Cursor);
+    }
+
+    static void RenderScrollBar()
+    {
+        float maxScrollDistance = maxScroll + GUI.TopPad;
+
+        int scrollBarPadding = GUI.Point(5);
+        int scrollBarArea = ScreenHeight - scrollBarPadding * 2;
+        int scrollBarWidth = GUI.Point(3);
+        int scrollBarHeight = (int)(50 * scrollBarArea / maxScrollDistance);
+        int scrollBarTopY = scrollBarPadding;
+        int scrollBarBottomY = ScreenHeight - scrollBarPadding - scrollBarHeight;
+        int scrollBarX = ScreenWidth - scrollBarPadding - scrollBarWidth;
+
+        float scrollPercentage = (scroll + GUI.TopPad) / maxScrollDistance;
+
+        int scrollBarY = (int)MathHelpers.Lerp(scrollBarTopY, scrollBarBottomY, scrollPercentage);
+
+        Raylib.DrawRectangleRounded(
+            new Rectangle(
+                scrollBarX,
+                scrollBarY,
+                scrollBarWidth,
+                scrollBarHeight),
+            0.8f,
+            0,
+            GUI.Background);
     }
 }
