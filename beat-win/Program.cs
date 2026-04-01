@@ -1,6 +1,7 @@
 ﻿using Raylib_cs;
 using Windows.Win32;
 using static QuestPDF.Helpers.Colors;
+using Rectangle = Raylib_cs.Rectangle;
 
 namespace beat_win;
 
@@ -19,6 +20,7 @@ internal static class Program
 
     static Line CurrentLine => document.Lines[cursorRow];
 
+    [STAThread]
     static void Main(string[] args)
     {
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.Msaa4xHint);
@@ -61,6 +63,7 @@ internal static class Program
             {
                 UpdateMaxScroll();
                 Render();
+                SetTitleBarText();
             }
             else
             {
@@ -68,9 +71,14 @@ internal static class Program
             }
         }
 
-        document.Save();
+        document.AskSave();
 
         Raylib.CloseWindow();
+    }
+
+    static void SetTitleBarText()
+    {
+        Raylib.SetWindowTitle($"(beat) {document.Name()}");
     }
 
     static void LineGeneralInput()
@@ -200,6 +208,28 @@ internal static class Program
         {
             document.Save();
         }
+        if (Raylib.IsKeyPressed(KeyboardKey.N))
+        {
+            FileDocument? doc = FileDocument.NewWithDialog();
+            if (doc != null) LoadDocument(doc);
+        }
+        if (Raylib.IsKeyPressed(KeyboardKey.O))
+        {
+            FileDocument? doc = FileDocument.OpenWithDialog();
+            if (doc != null) LoadDocument(doc);
+        }
+    }
+
+    static void LoadDocument(Document doc)
+    {
+        scrollMinVisible = 0;
+        scroll = -GUI.TopPad;
+        cursorUpDownX = -1;
+        cursorRow = 0;
+        cursorIdx = 0;
+        needsRedraw = true;
+        document.AskSave();
+        document = doc;
     }
 
     static void FileLoader()
@@ -208,14 +238,7 @@ internal static class Program
         {
             string[] files = Raylib.GetDroppedFiles();
             if (files.Length == 0) return;
-            scrollMinVisible = 0;
-            scroll = 0;
-            cursorUpDownX = -1;
-            cursorRow = 0;
-            cursorIdx = 0;
-            needsRedraw = true;
-            document.Save();
-            document = new FileDocument(files[0]);
+            LoadDocument(new FileDocument(files[0]));
         }
     }
 
@@ -452,15 +475,6 @@ internal static class Program
             foreach (List<LineFragment> fragments in line.Content)
             {
                 int xOffset = 0;
-
-                if (line.Kind == LineKind.Center)
-                {
-                    xOffset = (GUI.Inch(8.5f) - line.LeftPadPX - line.RightPadPX - GUI.TextWidth(String.Join("",fragments.Select(f=>f.Content)))) / 2;
-                }
-                else if (line.Kind == LineKind.Right)
-                {
-                    xOffset = GUI.Inch(8.5f) - line.LeftPadPX - line.RightPadPX - GUI.TextWidth(String.Join("", fragments.Select(f => f.Content)));
-                }
 
                 foreach (LineFragment fragment in fragments)
                 {

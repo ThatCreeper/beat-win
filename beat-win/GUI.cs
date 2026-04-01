@@ -1,4 +1,6 @@
 ﻿using Raylib_cs;
+using Color = Raylib_cs.Color;
+using Font = Raylib_cs.Font;
 
 namespace beat_win;
 
@@ -88,5 +90,10 @@ public static class GUI
             Raylib.DrawTextCodepoint(font, text[i], new System.Numerics.Vector2(x + chWid * i, y), size, syntax ? Syntax : color);
         }
         return width;
+    }
+
+    public static bool SaveConfirmDialog()
+    {
+        return MessageBox.Show("You have unsaved changes.\nDo you wish to save?", "Unsaved changes", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
     }
 }

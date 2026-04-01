@@ -152,4 +152,22 @@ public class Document
     }
 
     public virtual void Save() { }
+    public virtual bool CanSave()
+    {
+        return false;
+    }
+
+    public virtual string Name()
+    {
+        return "[Scratch Document]";
+    }
+
+    public void AskSave()
+    {
+        if (!CanSave()) return;
+        if (GUI.SaveConfirmDialog())
+        {
+            Save();
+        }
+    }
 }

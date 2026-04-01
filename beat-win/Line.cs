@@ -85,6 +85,10 @@ public class Line
                 || rawContent.StartsWith("[[marker:");
             return LineKind.Note;
         }
+        if (rawContent.EndsWith(" TO:") || rawContent.EndsWith(" OUT."))
+        {
+            return LineKind.Right;
+        }
         if (previousKind == LineKind.Nonexistant && rawContent.Contains(':'))
             return LineKind.Preamble;
         if (previousKind == LineKind.Preamble && !IsBlank)
@@ -123,6 +127,9 @@ public class Line
             LineKind.Dialogue => GUI.DialogueLeftPad,
             LineKind.Preamble => GUI.DialogueLeftPad,
             LineKind.Nonexistant => 0,
+            // These break for multiline wrapped things so just don't do that thx
+            LineKind.Right => 8.5f - GUI.ActionRightPad - rawContent.Length * 0.1f,
+            LineKind.Center => (8.5f - rawContent.Length * 0.1f) / 2,
             _ => GUI.ActionLeftPad
         };
         RightPad = Kind switch
@@ -130,6 +137,8 @@ public class Line
             LineKind.Parenthetical => GUI.ParentheticalRightPad,
             LineKind.Dialogue => GUI.DialogueRightPad,
             LineKind.Nonexistant => 0,
+            LineKind.Right => -1000,
+            LineKind.Center => -1000,
             _ => GUI.ActionRightPad
         };
         Color = Kind switch
@@ -255,6 +264,12 @@ public class Line
             }
             else if (Kind == LineKind.Center && i == rawContent.Length - 1 && rawContent[i] == '<')
             {
+                PushFragment(i, false);
+                PushFragment(i + 1, true);
+            }
+            else if (Kind == LineKind.Character && i == rawContent.Length - 1 && rawContent[i] == '^')
+            {
+                PushFragment(i, false);
                 PushFragment(i + 1, true);
             }
 

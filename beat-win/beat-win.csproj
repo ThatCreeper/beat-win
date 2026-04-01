@@ -6,6 +6,7 @@
     <RootNamespace>beat_win</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWindowsForms>True</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,8 +16,6 @@
     </PackageReference>
     <PackageReference Include="QuestPDF" Version="2026.2.4" />
     <PackageReference Include="Raylib-cs" Version="7.0.2" />
-    <PackageReference Include="System.Memory" Version="4.6.3" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
   </ItemGroup>
 
 </Project>
