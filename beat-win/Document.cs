@@ -5,6 +5,7 @@ public class Document
     public IReadOnlyList<Line> Lines;
     public int TotalRows = 0;
     public int TotalPDFRows = 0;
+    public int TotalScenes = 0;
 
     List<Line> lines;
 
@@ -25,12 +26,14 @@ public class Document
         {
             line.GlobalRow = 0;
             line.GlobalPDFRow = 0;
+            line.GlobalScene = 0;
             line.PDFUnrenderedCache = line.IsUnrenderedPDF(true);
         }
         else
         {
             line.GlobalRow = lines[index - 1].GlobalRow + lines[index - 1].RowCount;
             line.GlobalPDFRow = lines[index - 1].GlobalPDFRow + lines[index - 1].PDFRowCount;
+            line.GlobalScene = lines[index - 1].GlobalScene;
         }
         lines.Insert(index, line);
         Recombobulate(index);
@@ -47,23 +50,32 @@ public class Document
         {
             TotalRows = 0;
             TotalPDFRows = 0;
+            TotalScenes = 0;
         }
         else
         {
             TotalRows = lines[index - 1].GlobalRow + lines[index - 1].RowCount;
             TotalPDFRows = lines[index - 1].GlobalPDFRow + lines[index - 1].PDFRowCount;
+            TotalScenes = lines[index - 1].GlobalScene;
         }
         for (int i = index; i < lines.Count; i++)
         {
             lines[i].PDFUnrenderedCache = lines[i].IsUnrenderedPDF(priorUnrendered);
 
-            if (lines[i].Kind == LineKind.PageBreak)
+            if (lines[i].Kind == LineKind.PageBreak ||
+                (i != 0 && lines[i].Kind != LineKind.Preamble && lines[i - 1].Kind == LineKind.Preamble))
             {
                 TotalPDFRows = ((TotalPDFRows / LinesPerPage) + 1) * LinesPerPage;
             }
 
+            if (lines[i].Kind == LineKind.Scene)
+            {
+                TotalScenes++;
+            }
+
             lines[i].GlobalRow = TotalRows;
             lines[i].GlobalPDFRow = TotalPDFRows;
+            lines[i].GlobalScene = TotalScenes;
             TotalRows += lines[i].RowCount;
             TotalPDFRows += lines[i].PDFRowCount;
             priorUnrendered = lines[i].PDFUnrenderedCache;
@@ -73,7 +85,7 @@ public class Document
     void InternallyRecombobulate(int index)
     {
         LineKind oldKind;
-        LineKind newKind = index == 0 ? LineKind.Action : lines[index - 1].Kind;
+        LineKind newKind = index == 0 ? LineKind.Nonexistant : lines[index - 1].Kind;
         do
         {
             oldKind = lines[index].Kind;

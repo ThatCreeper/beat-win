@@ -6,7 +6,11 @@ public enum LineKind
     PageBreak,
     Character,
     Parenthetical,
-    Dialogue
+    Dialogue,
+    Preamble,
+    Nonexistant,
+    Note,
+    Scene
 }
 
 public struct LineFragment(string content)
@@ -25,6 +29,7 @@ public class Line
     public List<int> ContentLengths;
     public int GlobalRow = 0;
     public int GlobalPDFRow = 0;
+    public int GlobalScene = 0;
     public bool PDFUnrenderedCache = false;
     public LineKind Kind = LineKind.Action;
     string rawContent;
@@ -40,6 +45,9 @@ public class Line
     public float RightPad = GUI.ActionRightPad;
     public int LeftPadPX => GUI.Inch(LeftPad);
     public int RightPadPX => GUI.Inch(RightPad);
+    public Raylib_cs.Color Color = GUI.Foreground;
+
+    public bool IsMarker = false;
 
     public Line(string content = "")
     {
@@ -51,26 +59,52 @@ public class Line
     public void InternalRecombobulateDontCall(LineKind previousKind)
     {
         Kind = DetermineKind(previousKind);
-        SetPadding();
+        PerformKindModifications();
+        SetPaddingAndColor();
         WrapAndStyle();
     }
 
     private LineKind DetermineKind(LineKind previousKind)
     {
+        // Forces
+
+        // Otherwise
+        if (previousKind == LineKind.Nonexistant && rawContent.Contains(':'))
+            return LineKind.Preamble;
+        if (previousKind == LineKind.Preamble && !IsBlank)
+            return LineKind.Preamble;
         if (rawContent == "===")
             return LineKind.PageBreak;
         if (rawContent.StartsWith('('))
             return LineKind.Parenthetical;
+        if (rawContent.StartsWith("[[") && rawContent.EndsWith("]]"))
+        {
+            IsMarker = rawContent.StartsWith("[[marker ")
+                || rawContent.StartsWith("[[marker:");
+            return LineKind.Note;
+        }
         if ((previousKind == LineKind.Character ||
             previousKind == LineKind.Parenthetical ||
             previousKind == LineKind.Dialogue) && !IsBlank)
             return LineKind.Dialogue;
+        if (rawContent.Length >= 4 && (rawContent[3] == '.' || rawContent[3] == ' ' || rawContent[3] == '/') &&
+            (rawContent.StartsWith("INT") || rawContent.StartsWith("EXT") ||
+            rawContent.StartsWith("EST") || rawContent.StartsWith("I/E")))
+            return LineKind.Scene;
         if (rawContent.Length >= 2 && IsRawContentUpper())
             return LineKind.Character;
         return LineKind.Action;
     }
 
-    private void SetPadding()
+    private void PerformKindModifications()
+    {
+        if (Kind == LineKind.Scene)
+        {
+            rawContent = rawContent.ToUpper();
+        }
+    }
+
+    private void SetPaddingAndColor()
     {
         LeftPad = Kind switch
         {
@@ -79,6 +113,10 @@ public class Line
             LineKind.Character => GUI.CharacterLeftPad,
             LineKind.Parenthetical => GUI.ParentheticalLeftPad,
             LineKind.Dialogue => GUI.DialogueLeftPad,
+            LineKind.Preamble => GUI.DialogueLeftPad,
+            LineKind.Nonexistant => 0,
+            LineKind.Note => GUI.ActionLeftPad,
+            LineKind.Scene => GUI.ActionLeftPad
         };
         RightPad = Kind switch
         {
@@ -87,6 +125,17 @@ public class Line
             LineKind.Character => GUI.ActionRightPad,
             LineKind.Parenthetical => GUI.ParentheticalRightPad,
             LineKind.Dialogue => GUI.DialogueRightPad,
+            LineKind.Preamble => GUI.ActionRightPad,
+            LineKind.Nonexistant => 0,
+            LineKind.Note => GUI.ActionRightPad,
+            LineKind.Scene => GUI.ActionRightPad
+        };
+        Color = Kind switch
+        {
+            LineKind.Preamble => GUI.Syntax,
+            LineKind.Nonexistant => Raylib_cs.Color.Red,
+            LineKind.Note => GUI.Note,
+            _ => GUI.Foreground
         };
     }
 
@@ -95,7 +144,7 @@ public class Line
     {
         for (int i = 0; i < rawContent.Length; i++)
         {
-            if (!Char.IsUpper(rawContent[i]))
+            if (Char.IsLower(rawContent[i]))
                 return false;
         }
         return true;
@@ -114,6 +163,11 @@ public class Line
         bool bold = false;
         bool italic = false;
         bool underline = false;
+
+        if (Kind == LineKind.Scene)
+        {
+            bold = true;
+        }
 
         void PushFragment(int end, bool syntax)
         {
@@ -178,6 +232,12 @@ public class Line
                 if (nextUnderline) underline = nextUnderline;
                 PushFragment(i + 1, true);
                 underline = nextUnderline;
+            }
+            else if (rawContent[i] == '\\')
+            {
+                PushFragment(i, false);
+                i++;
+                PushFragment(i, true);
             }
 
             if (x <= lineLength) continue;
@@ -260,6 +320,10 @@ public class Line
     public bool IsUnrenderedPDF(bool priorUnrendered)
     {
         if (Kind == LineKind.PageBreak)
+            return true;
+        if (Kind == LineKind.Preamble)
+            return true;
+        if (Kind == LineKind.Note)
             return true;
         if (priorUnrendered && IsBlank)
             return true;

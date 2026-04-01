@@ -370,12 +370,27 @@ internal static class Program
         for (int lineIdx = scrollMinVisible; lineIdx < scrollMinVisible + GetMaxVisibleLines(); lineIdx++)
         {
             Line line = document.Lines[lineIdx];
-            string sidebar = $"{line.GlobalPDFRow}:{line.GlobalRow}";
-            GUI.Text(
-                sidebar,
-                pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
-                GUI.TextSize * drawnLines - (int)GetScrollPX(),
-                false, false, false, true);
+            // Page numbers!
+            if (!line.PDFUnrenderedCache && (line.GlobalPDFRow % Document.LinesPerPage) == 0)
+            {
+                string sidebar = $"{(line.GlobalPDFRow / Document.LinesPerPage) + 1}";
+                GUI.Text(
+                    sidebar,
+                    pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
+                    GUI.TextSize * drawnLines - (int)GetScrollPX(),
+                    false, true, false, GUI.Syntax);
+            }
+            // Scene numbers!
+            if (line.Kind == LineKind.Scene)
+            {
+                string sidebar = $"{line.GlobalScene}";
+                GUI.Text(
+                    sidebar,
+                    pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
+                    GUI.TextSize * drawnLines - (int)GetScrollPX(),
+                    false, true, false, GUI.Syntax);
+            }
+
             foreach (List<LineFragment> fragments in line.Content)
             {
                 int xOffset = 0;
@@ -385,7 +400,8 @@ internal static class Program
                         fragment.Content,
                         pageLeftPad + line.LeftPadPX + xOffset,
                         GUI.TextSize * drawnLines - (int)GetScrollPX(),
-                        fragment.Italic, fragment.Bold, fragment.Underline, fragment.Syntax);
+                        fragment.Italic, fragment.Bold, fragment.Underline,
+                        fragment.Syntax ? GUI.Syntax : line.Color);
                 }
                 drawnLines++;
             }
@@ -416,11 +432,13 @@ internal static class Program
             GUI.Cursor);
     }
 
+    static int ScrollBarPadding => GUI.Point(5);
+
     static void RenderScrollBar()
     {
         float maxScrollDistance = maxScroll + GUI.TopPad;
 
-        int scrollBarPadding = GUI.Point(5);
+        int scrollBarPadding = ScrollBarPadding;
         int scrollBarArea = ScreenHeight - scrollBarPadding * 2;
         int scrollBarWidth = GUI.Point(3);
         int scrollBarHeight = (int)(50 * scrollBarArea / maxScrollDistance);
