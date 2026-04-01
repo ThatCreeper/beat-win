@@ -10,7 +10,9 @@ public enum LineKind
     Preamble,
     Nonexistant,
     Note,
-    Scene
+    Scene,
+    Center,
+    Right
 }
 
 public struct LineFragment(string content)
@@ -69,6 +71,12 @@ public class Line
     private LineKind DetermineKind(LineKind previousKind)
     {
         // Forces
+        if (rawContent.StartsWith('!'))
+            return LineKind.Action;
+        if (rawContent.StartsWith("FADE IN:"))
+            return LineKind.Action;
+        if (rawContent.StartsWith('>'))
+            return rawContent.EndsWith('<') ? LineKind.Center : LineKind.Right;
 
         // Otherwise
         if (rawContent.StartsWith("[[") && rawContent.EndsWith("]]"))
@@ -90,8 +98,8 @@ public class Line
             previousKind == LineKind.Dialogue) && !IsBlank)
             return LineKind.Dialogue;
         if (rawContent.Length >= 4 && (rawContent[3] == '.' || rawContent[3] == ' ' || rawContent[3] == '/') &&
-            (rawContent.StartsWith("INT") || rawContent.StartsWith("EXT") ||
-            rawContent.StartsWith("EST") || rawContent.StartsWith("I/E")))
+            (rawContent.StartsWith("INT", StringComparison.InvariantCultureIgnoreCase) || rawContent.StartsWith("EXT", StringComparison.InvariantCultureIgnoreCase) ||
+            rawContent.StartsWith("EST", StringComparison.InvariantCultureIgnoreCase) || rawContent.StartsWith("I/E", StringComparison.InvariantCultureIgnoreCase)))
             return LineKind.Scene;
         if (rawContent.Length >= 2 && IsRawContentUpper())
             return LineKind.Character;
@@ -110,27 +118,19 @@ public class Line
     {
         LeftPad = Kind switch
         {
-            LineKind.Action => GUI.ActionLeftPad,
-            LineKind.PageBreak => GUI.ActionLeftPad,
             LineKind.Character => GUI.CharacterLeftPad,
             LineKind.Parenthetical => GUI.ParentheticalLeftPad,
             LineKind.Dialogue => GUI.DialogueLeftPad,
             LineKind.Preamble => GUI.DialogueLeftPad,
             LineKind.Nonexistant => 0,
-            LineKind.Note => GUI.ActionLeftPad,
-            LineKind.Scene => GUI.ActionLeftPad
+            _ => GUI.ActionLeftPad
         };
         RightPad = Kind switch
         {
-            LineKind.Action => GUI.ActionRightPad,
-            LineKind.PageBreak => GUI.ActionRightPad,
-            LineKind.Character => GUI.ActionRightPad,
             LineKind.Parenthetical => GUI.ParentheticalRightPad,
             LineKind.Dialogue => GUI.DialogueRightPad,
-            LineKind.Preamble => GUI.ActionRightPad,
             LineKind.Nonexistant => 0,
-            LineKind.Note => GUI.ActionRightPad,
-            LineKind.Scene => GUI.ActionRightPad
+            _ => GUI.ActionRightPad
         };
         Color = Kind switch
         {
@@ -150,8 +150,10 @@ public class Line
             if (Char.IsLower(rawContent[i]))
                 return false;
             HasAlphanumeric = HasAlphanumeric || Char.IsLetter(rawContent[i]);
+            if (rawContent[i] == '*' || rawContent[i] == '_')
+                return false;
         }
-        return HasAlphanumeric;
+        return true;
     }
 
     private void WrapAndStyle()
@@ -242,6 +244,18 @@ public class Line
                 PushFragment(i, false);
                 i++;
                 PushFragment(i, true);
+            }
+            else if (i == 0 && rawContent[i] == '!')
+            {
+                PushFragment(i + 1, true);
+            }
+            else if (i == 0 && rawContent[i] == '>')
+            {
+                PushFragment(i + 1, true);
+            }
+            else if (Kind == LineKind.Center && i == rawContent.Length - 1 && rawContent[i] == '<')
+            {
+                PushFragment(i + 1, true);
             }
 
             if (x <= lineLength) continue;

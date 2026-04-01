@@ -118,4 +118,38 @@ public class Document
         lines.RemoveAt(index);
         return value;
     }
+
+    // Returns the new columnindex thing
+    public int InsertMultilineAtCaret(int row, int index, string[] lines)
+    {
+        if (lines.Length == 0) return index;
+        
+        if (lines.Length == 1)
+        {
+            Alter(row, mut => mut.AddString(index, lines[0]));
+            return index + lines[0].Length;
+        }
+        else
+        {
+            string after = Alter(row, mut =>
+            {
+                mut.AddString(index, lines[0]);
+                return mut.RemoveAllAfterPosition(index + lines[0].Length);
+            });
+            for (int i = 1; i < lines.Length - 1; i++)
+            {
+                row++;
+                AddLine(row, lines[i]);
+            }
+            AddLine(row, lines[lines.Length - 1] + after);
+            return lines[lines.Length - 1].Length;
+        }
+    }
+
+    public int InsertMultilineAtCaret(int row, int index, string lines)
+    {
+        return InsertMultilineAtCaret(row, index, lines.Split("\n"));
+    }
+
+    public virtual void Save() { }
 }

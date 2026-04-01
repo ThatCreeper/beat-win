@@ -17,9 +17,6 @@ internal static class Program
     static float maxScroll = 10_000;
     static int scrollMinVisible = 0;
 
-    static float renderCursorX = 0;
-    static float renderCursorY = 0;
-
     static Line CurrentLine => document.Lines[cursorRow];
 
     static void Main(string[] args)
@@ -32,19 +29,30 @@ internal static class Program
         GUI.Load();
         ResizeCenter(GUI.Inch(10), GUI.Inch(6));
 
+        document.InsertMultilineAtCaret(0, 0, "No file is loaded.\n\nDrop a file onto the window to continue.\n\nChanges in this document will not be saved.");
+
         while (!Raylib.WindowShouldClose())
         {
+            FileLoader();
+
             UpdateScroll();
             UpdateMouse();
 
             LineGeneralInput();
-            if (LineRowInput())
+            if (Raylib.IsKeyDown(KeyboardKey.LeftControl) || Raylib.IsKeyDown(KeyboardKey.RightControl))
             {
-                string removed = document.Remove(cursorRow);
-                cursorRow--;
-                cursorIdx = CurrentLine.MaxIdx;
-                document.Alter(cursorRow, mut => mut.AddStringEnd(removed));
-                needsRedraw = true;
+                SpecialInput();
+            }
+            else
+            {
+                if (LineRowInput())
+                {
+                    string removed = document.Remove(cursorRow);
+                    cursorRow--;
+                    cursorIdx = CurrentLine.MaxIdx;
+                    document.Alter(cursorRow, mut => mut.AddStringEnd(removed));
+                    needsRedraw = true;
+                }
             }
 
             ClampScroll();
@@ -59,6 +67,8 @@ internal static class Program
                 Raylib.PollInputEvents();
             }
         }
+
+        document.Save();
 
         Raylib.CloseWindow();
     }
@@ -181,6 +191,31 @@ internal static class Program
             }
             needsRedraw = true;
             return;
+        }
+    }
+
+    static void SpecialInput()
+    {
+        if (Raylib.IsKeyPressed(KeyboardKey.S))
+        {
+            document.Save();
+        }
+    }
+
+    static void FileLoader()
+    {
+        if (Raylib.IsFileDropped())
+        {
+            string[] files = Raylib.GetDroppedFiles();
+            if (files.Length == 0) return;
+            scrollMinVisible = 0;
+            scroll = 0;
+            cursorUpDownX = -1;
+            cursorRow = 0;
+            cursorIdx = 0;
+            needsRedraw = true;
+            document.Save();
+            document = new FileDocument(files[0]);
         }
     }
 
@@ -396,7 +431,7 @@ internal static class Program
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
-                    false, true, false, GUI.Syntax);
+                    false, true, false, GUI.Syntax, true);
             }
             // Scene numbers!
             if (line.Kind == LineKind.Scene)
@@ -406,7 +441,7 @@ internal static class Program
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
-                    false, true, false, GUI.Syntax);
+                    false, true, false, GUI.Syntax, true);
             }
             // Markers!
             if (line.Kind == LineKind.Note && line.IsMarker)
@@ -417,6 +452,16 @@ internal static class Program
             foreach (List<LineFragment> fragments in line.Content)
             {
                 int xOffset = 0;
+
+                if (line.Kind == LineKind.Center)
+                {
+                    xOffset = (GUI.Inch(8.5f) - line.LeftPadPX - line.RightPadPX - GUI.TextWidth(String.Join("",fragments.Select(f=>f.Content)))) / 2;
+                }
+                else if (line.Kind == LineKind.Right)
+                {
+                    xOffset = GUI.Inch(8.5f) - line.LeftPadPX - line.RightPadPX - GUI.TextWidth(String.Join("", fragments.Select(f => f.Content)));
+                }
+
                 foreach (LineFragment fragment in fragments)
                 {
                     xOffset += GUI.Text(
@@ -424,7 +469,8 @@ internal static class Program
                         pageLeftPad + line.LeftPadPX + xOffset,
                         GUI.TextSize * drawnLines - (int)GetScrollPX(),
                         fragment.Italic, fragment.Bold, fragment.Underline,
-                        fragment.Syntax ? GUI.Syntax : line.Color);
+                        line.Color,
+                        fragment.Syntax);
                 }
                 drawnLines++;
             }
