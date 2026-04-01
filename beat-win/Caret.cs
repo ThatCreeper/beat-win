@@ -84,7 +84,7 @@ public class Caret
         {
             if (SelectionEnd.Row == document.Lines.Count - 1)
             {
-                SelectionEnd.Index = 0;
+                SelectionEnd.Index = EndLine.MaxIdx;
                 return;
             }
             modifiedSubrow -= EndLine.RowCount;
@@ -132,12 +132,16 @@ public class Caret
 
     public void Insert(string text)
     {
-        throw new NotImplementedException();
+        int rows;
+        SelectionEnd.Index = document.InsertMultilineAtCaret(SelectionEnd.Row, SelectionEnd.Index, text, out rows);
+        SelectionEnd.Row += rows;
+        SelectionStart = SelectionEnd;
+        upDownXPos = EndLine.GetCursorCharX(SelectionEnd.Index);
     }
 
     public void Insert(char text)
     {
-        throw new NotImplementedException();
+        Insert(text.ToString());
     }
 
     // Backspace

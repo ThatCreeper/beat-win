@@ -141,14 +141,22 @@ public class Document
                 row++;
                 AddLine(row, lines[i]);
             }
-            AddLine(row, lines[lines.Length - 1] + after);
+            AddLine(row + 1, lines[lines.Length - 1] + after);
             return lines[lines.Length - 1].Length;
         }
     }
 
+    public int InsertMultilineAtCaret(int row, int index, string lines, out int rows)
+    {
+        string[] cut = lines.Split("\n");
+        rows = cut.Length - 1;
+        return InsertMultilineAtCaret(row, index, cut);
+    }
+
     public int InsertMultilineAtCaret(int row, int index, string lines)
     {
-        return InsertMultilineAtCaret(row, index, lines.Split("\n"));
+        int rows;
+        return InsertMultilineAtCaret(row, index, lines, out rows);
     }
 
     public virtual void Save() { }
