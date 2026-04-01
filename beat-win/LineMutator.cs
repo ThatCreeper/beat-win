@@ -24,16 +24,25 @@ public class LineMutator(Line line)
         AddString(cursorIdx, input.ToString());
     }
 
-    public void RemoveCharacterBackwards(int cursorIdx)
+    public char RemoveCharacterBackwards(int cursorIdx)
     {
-        if (cursorIdx == 0) return;
+        if (cursorIdx == 0) return '\n';
+        char result = RawContent[cursorIdx - 1];
         RawContent = RawContent.Remove(cursorIdx - 1, 1);
+        return result;
     }
 
     public string RemoveAllAfterPosition(int cursorIdx)
     {
         string result = RawContent.Substring(cursorIdx);
         RawContent = RawContent.Remove(cursorIdx);
+        return result;
+    }
+
+    public string RemoveSomeAfterPosition(int cursorIdx, int count)
+    {
+        string result = RawContent.Substring(cursorIdx, count);
+        RawContent = RawContent.Remove(cursorIdx, count);
         return result;
     }
 

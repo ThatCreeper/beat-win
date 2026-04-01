@@ -95,24 +95,38 @@ internal static class Program
             }
         }
 
+        bool shifting = Raylib.IsKeyDown(KeyboardKey.LeftShift) || Raylib.IsKeyDown(KeyboardKey.RightShift);
+
         if (KeyOrRepeat(KeyboardKey.Left))
         {
-            caret.MoveCaretX(-1);
+            if (shifting)
+                caret.MoveEndX(-1);
+            else
+                caret.MoveCaretX(-1);
             needsRedraw = true;
         }
         if (KeyOrRepeat(KeyboardKey.Right))
         {
-            caret.MoveCaretX(1);
+            if (shifting)
+                caret.MoveEndX(1);
+            else
+                caret.MoveCaretX(1);
             needsRedraw = true;
         }
         if (KeyOrRepeat(KeyboardKey.Up))
         {
-            caret.MoveCaretY(-1);
+            if (shifting)
+                caret.MoveEndY(-1);
+            else
+                caret.MoveCaretY(-1);
             needsRedraw = true;
         }
         if (KeyOrRepeat(KeyboardKey.Down))
         {
-            caret.MoveCaretY(1);
+            if (shifting)
+                caret.MoveEndY(1);
+            else
+                caret.MoveCaretY(1);
             needsRedraw = true;
         }
     }
@@ -344,7 +358,7 @@ internal static class Program
         Raylib.ClearBackground(GUI.UIBackground);
         Raylib.DrawRectangle(pageLeftPad, 0, pageWidth, screenHeight, GUI.Background);
 
-        caret.RenderSelection();
+        caret.RenderSelection(pageLeftPad, (int)GetScrollPX());
         
         int drawnLines = document.Lines[scrollMinVisible].GlobalRow;
         for (int lineIdx = scrollMinVisible; lineIdx < scrollMinVisible + GetMaxVisibleLines(); lineIdx++)

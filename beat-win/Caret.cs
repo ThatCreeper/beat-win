@@ -22,6 +22,8 @@ public class Caret
     public SelectionPosition SelectionStart;
     public SelectionPosition SelectionEnd;
 
+    public bool IsSelecting => !SelectionStart.Equals(SelectionEnd);
+
     int upDownXPos = 0;
     Document document;
 
@@ -52,7 +54,7 @@ public class Caret
                 break;
             }
             SelectionEnd.Row--;
-            SelectionEnd.Index += EndLine.MaxIdx;
+            SelectionEnd.Index += EndLine.MaxIdx + 1;
         }
         while (SelectionEnd.Index > EndLine.MaxIdx)
         {
@@ -61,7 +63,7 @@ public class Caret
                 SelectionEnd.Index = EndLine.MaxIdx;
                 break;
             }
-            SelectionEnd.Index -= EndLine.MaxIdx;
+            SelectionEnd.Index -= EndLine.MaxIdx + 1;
             SelectionEnd.Row++;
         }
         upDownXPos = EndLine.GetCursorCharX(SelectionEnd.Index);
@@ -132,6 +134,8 @@ public class Caret
 
     public void Insert(string text)
     {
+        if (IsSelecting) DeleteBackspace();
+
         int rows;
         SelectionEnd.Index = document.InsertMultilineAtCaret(SelectionEnd.Row, SelectionEnd.Index, text, out rows);
         SelectionEnd.Row += rows;
@@ -145,18 +149,92 @@ public class Caret
     }
 
     // Backspace
-    public void DeleteBackspace()
+    public string DeleteBackspace()
     {
-        throw new NotImplementedException();
+        if (IsSelecting)
+        {
+            if (SelectionMin.Row == SelectionMax.Row)
+            {
+                string removed = document.Alter(SelectionMin.Row, mut => mut.RemoveSomeAfterPosition(SelectionMin.Index, SelectionMax.Index - SelectionMin.Index));
+                SetCaretIndex(SelectionMin.Row, SelectionMin.Index);
+                return removed;
+            }
+            else
+            {
+                // First row
+                string removed = document.Alter(SelectionMin.Row, mut => mut.RemoveAllAfterPosition(SelectionMin.Index));
+                // Middle rows
+                SelectionPosition max = SelectionMax;
+                for (int i = 0; i < max.Row - SelectionMin.Row - 1; i++)
+                {
+                    removed += "\n" + document.Remove(SelectionMin.Row + 1);
+                }
+                // Last row
+                removed += "\n" + document.Alter(SelectionMin.Row + 1, mut => mut.RemoveSomeAfterPosition(0, max.Index));
+                // Combine
+                SetCaretIndex(SelectionMin.Row + 1, 0);
+                DeleteBackspace();
+                return removed;
+            }
+        }
+        else
+        {
+            if (SelectionEnd.Index == 0)
+            {
+                if (SelectionEnd.Row != 0)
+                {
+                    string removed = document.Remove(SelectionEnd.Row);
+                    MoveCaretX(-1);
+                    document.InsertMultilineAtCaret(SelectionEnd.Row, SelectionEnd.Index, removed);
+                    return "\n";
+                }
+                else
+                {
+                    return "";
+                }
+            }
+            else
+            {
+                string removed = document.Alter(SelectionEnd.Row, mut => mut.RemoveCharacterBackwards(SelectionEnd.Index).ToString());
+                MoveCaretX(-1);
+                return removed;
+            }
+        }
     }
 
 
     // RENDER !
 
-    public void RenderSelection()
+    public void RenderSelection(int pageOffset, int scrollPixels)
     {
-        if (SelectionStart.Equals(SelectionEnd)) return;
-        throw new NotImplementedException();
+        if (!IsSelecting) return;
+        
+        for (int i = SelectionMin.Row; i <= SelectionMax.Row; i++)
+        {
+            Line line = document.Lines[i];
+            int startIndex = i == SelectionMin.Row ? SelectionMin.Index : 0;
+            int endIndex = i == SelectionMax.Row ? SelectionMax.Index : line.MaxIdx;
+
+            int lineStartIndex = 0;
+            for (int j = 0; j < line.RowCount; j++)
+            {
+                int length = line.ContentLengths[j];
+                if (startIndex > lineStartIndex + length) continue;
+                if (endIndex < lineStartIndex) break;
+
+                int left = GUI.TextWidth(Math.Max(0, startIndex - lineStartIndex));
+                int right = GUI.TextWidth(Math.Min(length, endIndex - lineStartIndex));
+
+                Raylib.DrawRectangle(
+                    pageOffset + line.LeftPadPX + left,
+                    (line.GlobalRow + j) * GUI.TextSize - scrollPixels,
+                    right - left,
+                    GUI.TextSize,
+                    Raylib.Fade(GUI.Cursor, 0.5f));
+
+                lineStartIndex += length;
+            }
+        }
     }
 
     public void RenderCaret(int pageLeftPad, int scrollPixels)
