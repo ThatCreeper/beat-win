@@ -183,6 +183,10 @@ public class Line
         {
             bold = true;
         }
+        else if (Kind == LineKind.Note)
+        {
+            italic = true;
+        }
 
         void PushFragment(int end, bool syntax)
         {
