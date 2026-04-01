@@ -454,7 +454,7 @@ internal static class Program
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
-                    false, true, false, GUI.Syntax, true);
+                    false, false, false, GUI.Syntax, true);
             }
             // Scene numbers!
             if (line.Kind == LineKind.Scene)
@@ -464,7 +464,7 @@ internal static class Program
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
-                    false, true, false, GUI.Syntax, true);
+                    false, false, false, GUI.Syntax, true);
             }
             // Markers!
             if (line.Kind == LineKind.Note && line.IsMarker)
