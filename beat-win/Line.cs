@@ -71,6 +71,12 @@ public class Line
         // Forces
 
         // Otherwise
+        if (rawContent.StartsWith("[[") && rawContent.EndsWith("]]"))
+        {
+            IsMarker = rawContent.StartsWith("[[marker ")
+                || rawContent.StartsWith("[[marker:");
+            return LineKind.Note;
+        }
         if (previousKind == LineKind.Nonexistant && rawContent.Contains(':'))
             return LineKind.Preamble;
         if (previousKind == LineKind.Preamble && !IsBlank)
@@ -79,12 +85,6 @@ public class Line
             return LineKind.PageBreak;
         if (rawContent.StartsWith('('))
             return LineKind.Parenthetical;
-        if (rawContent.StartsWith("[[") && rawContent.EndsWith("]]"))
-        {
-            IsMarker = rawContent.StartsWith("[[marker ")
-                || rawContent.StartsWith("[[marker:");
-            return LineKind.Note;
-        }
         if ((previousKind == LineKind.Character ||
             previousKind == LineKind.Parenthetical ||
             previousKind == LineKind.Dialogue) && !IsBlank)
@@ -144,12 +144,14 @@ public class Line
     // Length = 0 returns true
     private bool IsRawContentUpper()
     {
+        bool HasAlphanumeric = false;
         for (int i = 0; i < rawContent.Length; i++)
         {
             if (Char.IsLower(rawContent[i]))
                 return false;
+            HasAlphanumeric = HasAlphanumeric || Char.IsLetter(rawContent[i]);
         }
-        return true;
+        return HasAlphanumeric;
     }
 
     private void WrapAndStyle()
@@ -310,7 +312,7 @@ public class Line
         {
             idx += ContentLengths[i];
         }
-        idx += Math.Min(x, ContentLengths[y]);
+        idx += Math.Clamp(x, 0, ContentLengths[y]);
         return idx;
     }
 

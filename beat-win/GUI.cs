@@ -34,6 +34,7 @@ public static class GUI
 
     public static float FloatInch(float inches) => inches * InchToPx;
     public static int Inch(float inches) => (int)FloatInch(inches);
+    public static float FloatPoint(float points) => FloatInch(points / 72);
     public static int Point(float points) => Inch(points / 72);
 
     public static void Update()

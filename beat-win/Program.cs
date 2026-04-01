@@ -1,5 +1,6 @@
 ﻿using Raylib_cs;
 using Windows.Win32;
+using static QuestPDF.Helpers.Colors;
 
 namespace beat_win;
 
@@ -268,7 +269,7 @@ internal static class Program
             }
         }
         Line minVisibleLine = document.Lines[scrollMinVisible];
-        float scrollMinHeight = GUI.TextSize * (minVisibleLine.GlobalRow + minVisibleLine.RowCount);
+        float scrollMinHeight = GUI.TextSize * minVisibleLine.GlobalRow;
         if (scroll > maxScroll - scrollMinHeight)
         {
             scroll = Math.Min(scroll, maxScroll - scrollMinHeight);
@@ -287,7 +288,7 @@ internal static class Program
     static float GetScrollPX()
     {
         Line minVisibleLine = document.Lines[scrollMinVisible];
-        return scroll + GUI.TextSize * (minVisibleLine.GlobalRow + minVisibleLine.RowCount);
+        return scroll + GUI.TextSize * (minVisibleLine.GlobalRow);
     }
 
     static int GetMaxVisibleLines()
@@ -351,7 +352,7 @@ internal static class Program
             {
                 cursorRow = i;
                 cursorIdx = line.GetIndex(
-                    Math.Max(0,(int)Math.Round((x - line.LeftPadPX) / GUI.CharacterWidth)),
+                    (int)Math.Round((x - line.LeftPadPX) / GUI.CharacterWidth),
                     pY - row);
                 hit = true;
                 break;
@@ -361,7 +362,7 @@ internal static class Program
         if (!hit)
         {
             cursorRow = document.Lines.Count - 1;
-            cursorIdx = document.Lines[cursorRow].MaxIdx;
+            cursorIdx = CurrentLine.GetIndex((int)Math.Round((x - CurrentLine.LeftPadPX) / GUI.CharacterWidth), CurrentLine.RowCount - 1);
         }
         needsRedraw = true;
     }
@@ -407,6 +408,11 @@ internal static class Program
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
                     false, true, false, GUI.Syntax);
             }
+            // Markers!
+            if (line.Kind == LineKind.Note && line.IsMarker)
+            {
+                RenderMarker(pageLeftPad, GUI.TextSize * drawnLines - (int)GetScrollPX());
+            }
 
             foreach (List<LineFragment> fragments in line.Content)
             {
@@ -425,6 +431,7 @@ internal static class Program
         }
         RenderCaret(pageLeftPad);
         RenderScrollBar();
+        RenderMarkerHints();
         Raylib.EndDrawing();
         needsRedraw = false;
     }
@@ -482,5 +489,47 @@ internal static class Program
             0.8f,
             0,
             GUI.Background);
+    }
+
+    static void RenderMarker(int x, int y)
+    {
+        x += GUI.Inch(GUI.ActionLeftPad);
+        y -= GUI.Point(0.5f);
+
+        int height = GUI.TextSize;
+        int heightExpand = GUI.Point(-0.5f);
+        int width = GUI.Point(40);
+        int inset = height;
+        int padding = GUI.Point(20);
+
+        Raylib.DrawRectangle(x - padding - width + inset, y - heightExpand, width - inset, height + heightExpand * 2, GUI.Note);
+        Raylib.DrawTriangle(
+            new System.Numerics.Vector2(x - padding - width, y - heightExpand),
+            new System.Numerics.Vector2(x - padding - width + inset, y + height / 2),
+            new System.Numerics.Vector2(x - padding - width + inset, y - heightExpand),
+            GUI.Note);
+        Raylib.DrawTriangle(
+            new System.Numerics.Vector2(x - padding - width + inset, y + height / 2),
+            new System.Numerics.Vector2(x - padding - width, y + height + heightExpand),
+            new System.Numerics.Vector2(x - padding - width + inset, y + height + heightExpand),
+            GUI.Note);
+    }
+
+    static void RenderMarkerHints()
+    {
+        float radius = GUI.FloatPoint(1.5f);
+        int x = ScreenWidth - ScrollBarPadding - (int)radius;
+        int padding = ScrollBarPadding + (int)radius + GUI.Point(1);
+        int topY = padding;
+        int bottomY = ScreenHeight - padding;
+
+        foreach (Line line in document.Lines)
+        {
+            if (line.Kind != LineKind.Note || !line.IsMarker) continue;
+
+            int y = (int)MathHelpers.Lerp(topY, bottomY, (float)line.GlobalRow / document.TotalRows);
+
+            Raylib.DrawCircle(x, y, radius, Raylib.Fade(GUI.Note, 0.5f));
+        }
     }
 }
