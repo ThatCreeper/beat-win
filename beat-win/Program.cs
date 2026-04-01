@@ -77,6 +77,25 @@ internal static class Program
             needsRedraw = true;
             return;
         }
+        if (Raylib.IsKeyPressed(KeyboardKey.Tab))
+        {
+            if (line.Kind == LineKind.Character || line.Kind == LineKind.Dialogue)
+            {
+                document.AddLine(cursorRow + 1, "()");
+                cursorRow++;
+                cursorIdx = 1;
+                cursorUpDownX = -1;
+                needsRedraw = true;
+            }
+            else if (line.Kind == LineKind.Parenthetical)
+            {
+                document.AddLine(cursorRow + 1, "");
+                cursorRow++;
+                cursorIdx = 0;
+                cursorUpDownX = -1;
+                needsRedraw = true;
+            }
+        }
 
         if (KeyOrRepeat(KeyboardKey.Left))
         {
@@ -118,23 +137,22 @@ internal static class Program
         }
         if (KeyOrRepeat(KeyboardKey.Up))
         {
-            int lineY = line.GetCursorSublineY(cursorIdx);
+            int lineY = CurrentLine.GetCursorSublineY(cursorIdx);
             if (cursorRow == 0 && lineY == 0)
             {
                 cursorIdx = 0;
             }
             else
             {
-                cursorUpDownX = cursorUpDownX != -1 ? cursorUpDownX : line.GetCursorCharX(cursorIdx);
+                cursorUpDownX = cursorUpDownX != -1 ? cursorUpDownX : CurrentLine.GetCursorCharX(cursorIdx);
                 if (lineY == 0)
                 {
                     cursorRow--;
-                    line = document.Lines[cursorRow];
-                    cursorIdx = line.GetIndex(cursorUpDownX, line.RowCount - 1);
+                    cursorIdx = CurrentLine.GetIndex(cursorUpDownX, CurrentLine.RowCount - 1);
                 }
                 else
                 {
-                    cursorIdx = line.GetIndex(cursorUpDownX, lineY - 1);
+                    cursorIdx = CurrentLine.GetIndex(cursorUpDownX, lineY - 1);
                 }
             }
             needsRedraw = true;
@@ -142,23 +160,22 @@ internal static class Program
         }
         if (KeyOrRepeat(KeyboardKey.Down))
         {
-            int lineY = line.GetCursorSublineY(cursorIdx);
-            if (cursorRow == document.Lines.Count - 1 && lineY == line.RowCount - 1)
+            int lineY = CurrentLine.GetCursorSublineY(cursorIdx);
+            if (cursorRow == document.Lines.Count - 1 && lineY == CurrentLine.RowCount - 1)
             {
-                cursorIdx = line.MaxIdx;
+                cursorIdx = CurrentLine.MaxIdx;
             }
             else
             {
-                cursorUpDownX = cursorUpDownX != -1 ? cursorUpDownX : line.GetCursorCharX(cursorIdx);
-                if (lineY == line.RowCount - 1)
+                cursorUpDownX = cursorUpDownX != -1 ? cursorUpDownX : CurrentLine.GetCursorCharX(cursorIdx);
+                if (lineY == CurrentLine.RowCount - 1)
                 {
                     cursorRow++;
-                    line = document.Lines[cursorRow];
-                    cursorIdx = line.GetIndex(cursorUpDownX, 0);
+                    cursorIdx = CurrentLine.GetIndex(cursorUpDownX, 0);
                 }
                 else
                 {
-                    cursorIdx = line.GetIndex(cursorUpDownX, lineY + 1);
+                    cursorIdx = CurrentLine.GetIndex(cursorUpDownX, lineY + 1);
                 }
             }
             needsRedraw = true;
@@ -414,16 +431,22 @@ internal static class Program
 
     private static void RenderCaret(int pageLeftPad)
     {
-        Line line = document.Lines[cursorRow];
+        Line line = CurrentLine;
         int rows = line.GetCursorSublineY(cursorIdx);
         for (int i = 0; i < cursorRow; i++)
         {
             rows += document.Lines[i].RowCount;
         }
 
+        int linePad = line.LeftPadPX;
+        if (line.IsBlank && cursorRow != 0 && document.Lines[cursorRow - 1].DoesDialogueComeNext)
+        {
+            linePad = GUI.Inch(GUI.DialogueLeftPad);
+        }
+
         Raylib.DrawRectangleRounded(
             new Rectangle(
-                GUI.TextWidth(line.GetCursorCharX(cursorIdx)) + pageLeftPad + line.LeftPadPX - GUI.Point(1),
+                GUI.TextWidth(line.GetCursorCharX(cursorIdx)) + pageLeftPad + linePad - GUI.Point(1),
                 rows* GUI.TextSize - GUI.Point(1.5f) - (int)GetScrollPX(),
                 GUI.Point(1.5f),
                 GUI.TextSize + GUI.Point(1)),

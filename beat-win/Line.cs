@@ -40,6 +40,8 @@ public class Line
     public int RowCount => Content.Count;
     public int PDFRowCount => PDFUnrenderedCache ? 0 : RowCount;
     public int MaxIdx => Content.Sum(c => c.Sum((LineFragment f) => f.Content.Length));
+    public bool DoesDialogueComeNext => Kind == LineKind.Character || Kind == LineKind.Parenthetical || Kind == LineKind.Dialogue;
+
 
     public float LeftPad = GUI.ActionLeftPad;
     public float RightPad = GUI.ActionRightPad;
