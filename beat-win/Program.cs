@@ -297,7 +297,11 @@ internal static class Program
 
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                 {
-                    SelectPixelXY(mX, mY);
+                    SelectPixelXY(mX, mY, Raylib.IsKeyDown(KeyboardKey.LeftShift) || Raylib.IsKeyDown(KeyboardKey.RightShift), scrollMinVisible);
+                }
+                else if (Raylib.IsMouseButtonDown(MouseButton.Left))
+                {
+                    SelectPixelXY(mX, mY, true, scrollMinVisible);
                 }
             }
             else
@@ -311,32 +315,28 @@ internal static class Program
         }
     }
 
-    static void SelectPixelXY(int x, int y)
+    // x and y should be in terms of page pixels
+    static void SelectPixelXY(int x, int y, bool shifting, int startSearchingRow = 0)
     {
-        throw new NotImplementedException();
-        //int pY = y / GUI.TextSize;
-        //int row = 0;
-        //bool hit = false;
-        //for (int i = 0; i < document.Lines.Count; i++)
-        //{
-        //    Line line = document.Lines[i];
-        //    int rc = line.RowCount;
-        //    if (row + rc > pY)
-        //    {
-        //        cursorRow = i;
-        //        cursorIdx = line.GetIndex(
-        //            (int)Math.Round((x - line.LeftPadPX) / GUI.CharacterWidth),
-        //            pY - row);
-        //        hit = true;
-        //        break;
-        //    }
-        //    row += rc;
-        //}
-        //if (!hit)
-        //{
-        //    cursorRow = document.Lines.Count - 1;
-        //    cursorIdx = CurrentLine.GetIndex((int)Math.Round((x - CurrentLine.LeftPadPX) / GUI.CharacterWidth), CurrentLine.RowCount - 1);
-        //}
+        int row = y / GUI.TextSize;
+
+        row = Math.Clamp(row, 0, document.TotalRows - 1);
+
+        for (int i = startSearchingRow; i < document.Lines.Count; i++)
+        {
+            Line line = document.Lines[i];
+            if (line.GlobalRow + line.RowCount <= row)
+                continue;
+
+            int column = line.GetIndex((int)MathF.Round((x - line.LeftPadPX) / GUI.CharacterWidth), row - line.GlobalRow);
+            if (shifting)
+                caret.SetEndIndex(i, column);
+            else
+                caret.SetCaretIndex(i, column);
+
+            break;
+        }
+
         needsRedraw = true;
     }
 

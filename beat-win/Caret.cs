@@ -114,20 +114,9 @@ public class Caret
         upDownXPos = EndLine.GetCursorCharX(index);
     }
 
-    public void SetEndPos(int x, int y)
-    {
-        throw new NotImplementedException();
-    }
-
     public void SetCaretIndex(int row, int index)
     {
         SetEndIndex(row, index);
-        SelectionStart = SelectionEnd;
-    }
-
-    public void SetCaretPos(int x, int y)
-    {
-        SetEndPos(x, y);
         SelectionStart = SelectionEnd;
     }
 
