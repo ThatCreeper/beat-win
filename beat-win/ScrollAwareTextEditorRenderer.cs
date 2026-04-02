@@ -23,6 +23,7 @@ public abstract class ScrollAwareTextEditorRenderer : ITextEditorRenderer
         needsRender = false;
     }
     public abstract int Text(string text, int x, int y, bool italic, bool bold, bool underline, Raylib_cs.Color color, bool syntax);
+    public abstract void RenderDocument(Document document, Caret caret);
 
     public void ResetScroll()
     {

@@ -190,10 +190,6 @@ internal static class Program
         }
     }
 
-    static int ScreenHeight => Raylib.GetScreenHeight();
-    static int ScreenWidth => Raylib.GetRenderWidth();
-    static int PageWidth => GUI.Inch(8.5f);
-    static int PageLeftPad => (ScreenWidth - PageWidth) / 2;
 
     static unsafe void SetTitleDark(bool dark)
     {
@@ -221,13 +217,6 @@ internal static class Program
         return Raylib.IsKeyPressed(key) || Raylib.IsKeyPressedRepeat(key);
     }
 
-    static int GetMaxVisibleLines()
-    {
-        return Math.Min(
-            (int)Math.Ceiling((float)ScreenHeight / GUI.TextSize) + 2,
-            document.Lines.Count - renderer.ScrollMinVisible);
-    }
-
     // Should make me not ever have to deal with this.
     static void ClampScroll()
     {
@@ -236,8 +225,8 @@ internal static class Program
 
     static void UpdateMouse()
     {
-        var pageWidth = PageWidth;
-        var pageLeftPad = PageLeftPad;
+        var pageWidth = RaylibTextEditorRenderer.PageWidth;
+        var pageLeftPad = RaylibTextEditorRenderer.PageLeftPad;
         var mX = Raylib.GetMouseX() - pageLeftPad;
         var mY = Raylib.GetMouseY() + (int)renderer.GetScrollPX(document);
 
@@ -301,146 +290,6 @@ internal static class Program
 
     static void Render()
     {
-        var screenHeight = ScreenHeight;
-        var pageWidth = PageWidth;
-        var pageLeftPad = PageLeftPad;
-
-        Raylib.BeginDrawing();
-        Raylib.ClearBackground(GUI.UIBackground);
-        Raylib.DrawRectangle(pageLeftPad, 0, pageWidth, screenHeight, GUI.Background);
-
-        caret.RenderSelection(pageLeftPad, (int)renderer.GetScrollPX(document));
-        
-        int drawnLines = document.Lines[renderer.ScrollMinVisible].GlobalRow;
-        for (int lineIdx = renderer.ScrollMinVisible; lineIdx < renderer.ScrollMinVisible + GetMaxVisibleLines(); lineIdx++)
-        {
-            Line line = document.Lines[lineIdx];
-            // Page numbers!
-            if (!line.PDFUnrenderedCache && (line.GlobalPDFRow % Document.LinesPerPage) == 0)
-            {
-                string sidebar = $"{(line.GlobalPDFRow / Document.LinesPerPage) + 1}.";
-                renderer.Text(
-                    sidebar,
-                    pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
-                    GUI.TextSize * drawnLines - (int)renderer.GetScrollPX(document),
-                    false, false, false, GUI.Syntax, true);
-            }
-            // Scene numbers!
-            if (line.Kind == LineKind.Scene)
-            {
-                string sidebar = $"{line.GlobalScene}";
-                renderer.Text(
-                    sidebar,
-                    pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
-                    GUI.TextSize * drawnLines - (int)renderer.GetScrollPX(document),
-                    false, false, false, GUI.Foreground, false);
-            }
-            // Markers!
-            if (line.Kind == LineKind.Note && line.IsMarker)
-            {
-                RenderMarker(pageLeftPad, GUI.TextSize * drawnLines - (int)renderer.GetScrollPX(document));
-            }
-
-            foreach (List<LineFragment> fragments in line.Content)
-            {
-                int xOffset = 0;
-
-                foreach (LineFragment fragment in fragments)
-                {
-                    xOffset += renderer.Text(
-                        fragment.Content,
-                        pageLeftPad + line.LeftPadPX + xOffset,
-                        GUI.TextSize * drawnLines - (int)renderer.GetScrollPX(document),
-                        fragment.Italic, fragment.Bold, fragment.Underline,
-                        line.Color,
-                        fragment.Syntax);
-                }
-                drawnLines++;
-            }
-        }
-        caret.RenderCaret(pageLeftPad, (int)renderer.GetScrollPX(document));
-        RenderScrollBar();
-        RenderMarkerHints();
-        RenderMenu();
-        Raylib.EndDrawing();
-        renderer.MarkNotDirty();
-    }
-
-    static int ScrollBarPadding => GUI.Point(5);
-
-    static void RenderScrollBar()
-    {
-        float maxScrollDistance = renderer.MaxScroll + GUI.TopPad;
-
-        int scrollBarPadding = ScrollBarPadding;
-        int scrollBarArea = ScreenHeight - scrollBarPadding * 2;
-        int scrollBarWidth = GUI.Point(3);
-        int scrollBarHeight = (int)(ScreenHeight * scrollBarArea / (maxScrollDistance + ScreenHeight));
-        int scrollBarTopY = scrollBarPadding;
-        int scrollBarBottomY = ScreenHeight - scrollBarPadding - scrollBarHeight;
-        int scrollBarX = ScreenWidth - scrollBarPadding - scrollBarWidth;
-
-        float scrollPercentage = (renderer.GetScrollPX(document) + GUI.TopPad) / (maxScrollDistance);
-
-        int scrollBarY = (int)MathHelpers.Lerp(scrollBarTopY, scrollBarBottomY, scrollPercentage);
-
-        Raylib.DrawRectangleRounded(
-            new Rectangle(
-                scrollBarX,
-                scrollBarY,
-                scrollBarWidth,
-                scrollBarHeight),
-            0.8f,
-            0,
-            GUI.Background);
-    }
-
-    static void RenderMarker(int x, int y)
-    {
-        x += GUI.Inch(GUI.ActionLeftPad);
-        y -= GUI.Point(0.5f);
-
-        int height = GUI.TextSize;
-        int heightExpand = GUI.Point(-0.5f);
-        int width = GUI.Point(40);
-        int inset = height;
-        int padding = GUI.Point(20);
-
-        Raylib.DrawRectangle(x - padding - width + inset, y - heightExpand, width - inset, height + heightExpand * 2, GUI.Note);
-        Raylib.DrawTriangle(
-            new System.Numerics.Vector2(x - padding - width, y - heightExpand),
-            new System.Numerics.Vector2(x - padding - width + inset, y + height / 2),
-            new System.Numerics.Vector2(x - padding - width + inset, y - heightExpand),
-            GUI.Note);
-        Raylib.DrawTriangle(
-            new System.Numerics.Vector2(x - padding - width + inset, y + height / 2),
-            new System.Numerics.Vector2(x - padding - width, y + height + heightExpand),
-            new System.Numerics.Vector2(x - padding - width + inset, y + height + heightExpand),
-            GUI.Note);
-    }
-
-    static void RenderMarkerHints()
-    {
-        float radius = GUI.FloatPoint(1.5f);
-        int x = ScreenWidth - ScrollBarPadding - (int)radius;
-        int padding = ScrollBarPadding + (int)radius + GUI.Point(1);
-        int topY = padding;
-        int bottomY = ScreenHeight - padding;
-
-        foreach (Line line in document.Lines)
-        {
-            if (line.Kind != LineKind.Note || !line.IsMarker) continue;
-
-            float factor = (float)line.GlobalRow / (document.TotalRows + ScreenHeight / GUI.TextSize - 5);
-
-            int y = (int)MathHelpers.Lerp(topY, bottomY, factor);
-
-            Raylib.DrawCircle(x, y, radius, Raylib.Fade(GUI.Note, 0.5f));
-        }
-    }
-
-    static void RenderMenu()
-    {
-        // TODO IMPLEMENTME
+        renderer.RenderDocument(document, caret);
     }
 }

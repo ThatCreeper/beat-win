@@ -13,4 +13,6 @@ public interface ITextEditorRenderer
     public int Text(string text, int x, int y, bool italic, bool bold, bool underline, Color color, bool syntax);
     public void MarkDirty();
     public void MarkNotDirty();
+
+    public void RenderDocument(Document document, Caret caret);
 }
