@@ -234,7 +234,7 @@ public class RaylibTextEditorRenderer : ScrollAwareTextEditorRenderer
         Raylib.ClearBackground(GUI.UIBackground);
         Raylib.DrawRectangle(pageLeftPad, 0, pageWidth, screenHeight, GUI.Background);
 
-        caret.RenderSelection(pageLeftPad, ScrollPixels);
+        RenderSelection(document, caret, pageLeftPad, ScrollPixels);
 
         int drawnLines = document.Lines[ScrollMinVisible].GlobalRow;
         for (int lineIdx = ScrollMinVisible; lineIdx < ScrollMinVisible + GetMaxVisibleLines(document); lineIdx++)
@@ -283,7 +283,7 @@ public class RaylibTextEditorRenderer : ScrollAwareTextEditorRenderer
                 drawnLines++;
             }
         }
-        caret.RenderCaret(pageLeftPad, ScrollPixels);
+        RenderCaret(document, caret, pageLeftPad, ScrollPixels);
         RenderScrollBar(document);
         RenderMarkerHints(document);
         RenderMenu();
@@ -378,5 +378,66 @@ public class RaylibTextEditorRenderer : ScrollAwareTextEditorRenderer
         return Math.Min(
             (int)Math.Ceiling((float)ScreenHeight / GUI.TextSize) + 2,
             document.Lines.Count - ScrollMinVisible);
+    }
+
+    public void RenderSelection(Document document, Caret caret, int pageOffset, int scrollPixels)
+    {
+        if (!caret.IsSelecting) return;
+
+        for (int i = caret.SelectionMin.Row; i <= caret.SelectionMax.Row; i++)
+        {
+            Line line = document.Lines[i];
+            int startIndex = i == caret.SelectionMin.Row ? caret.SelectionMin.Index : 0;
+            int endIndex = i == caret.SelectionMax.Row ? caret.SelectionMax.Index : line.MaxIdx;
+
+            int lineStartIndex = 0;
+            for (int j = 0; j < line.RowCount; j++)
+            {
+                int length = line.ContentLengths[j];
+                if (startIndex > lineStartIndex + length) continue;
+                if (endIndex < lineStartIndex) break;
+
+                int left = GUI.TextWidth(Math.Max(0, startIndex - lineStartIndex));
+                int right = GUI.TextWidth(Math.Min(length, endIndex - lineStartIndex));
+
+                Raylib.DrawRectangle(
+                    pageOffset + line.LeftPadPX + left,
+                    (line.GlobalRow + j) * GUI.TextSize - scrollPixels,
+                    right - left,
+                    GUI.TextSize,
+                    Raylib.Fade(GUI.Cursor, 0.5f));
+
+                lineStartIndex += length;
+            }
+        }
+    }
+
+    public void RenderCaret(Document document, Caret caret, int pageLeftPad, int scrollPixels)
+    {
+        int row = caret.SelectionEnd.Row;
+        int index = caret.SelectionEnd.Index;
+
+        Line line = document.Lines[row];
+        int rows = line.GetCursorSublineY(index);
+        for (int i = 0; i < row; i++)
+        {
+            rows += document.Lines[i].RowCount;
+        }
+
+        int linePad = line.LeftPadPX;
+        if (line.IsBlank && row != 0 && document.Lines[row - 1].DoesDialogueComeNext)
+        {
+            linePad = GUI.Inch(GUI.DialogueLeftPad);
+        }
+
+        Raylib.DrawRectangleRounded(
+            new Raylib_cs.Rectangle(
+                GUI.TextWidth(line.GetCursorCharX(index)) + pageLeftPad + linePad - GUI.Point(1),
+                rows * GUI.TextSize - GUI.Point(1.5f) - scrollPixels,
+                GUI.Point(1.5f),
+                GUI.TextSize + GUI.Point(1)),
+            0.8f,
+            0,
+            GUI.Cursor);
     }
 }
