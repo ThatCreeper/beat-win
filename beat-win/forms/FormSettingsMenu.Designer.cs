@@ -34,8 +34,13 @@ partial class FormSettingsMenu
         richTextBox1 = new RichTextBox();
         label1 = new Label();
         tabPage2 = new TabPage();
+        groupBox1 = new GroupBox();
+        label2 = new Label();
+        comboBox1 = new ComboBox();
         tabControl1.SuspendLayout();
         tabPage1.SuspendLayout();
+        tabPage2.SuspendLayout();
+        groupBox1.SuspendLayout();
         SuspendLayout();
         // 
         // tabControl1
@@ -82,6 +87,7 @@ partial class FormSettingsMenu
         // 
         // tabPage2
         // 
+        tabPage2.Controls.Add(groupBox1);
         tabPage2.Location = new Point(4, 34);
         tabPage2.Name = "tabPage2";
         tabPage2.Padding = new Padding(3);
@@ -89,6 +95,37 @@ partial class FormSettingsMenu
         tabPage2.TabIndex = 1;
         tabPage2.Text = "Main Configuration";
         tabPage2.UseVisualStyleBackColor = true;
+        // 
+        // groupBox1
+        // 
+        groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+        groupBox1.Controls.Add(label2);
+        groupBox1.Controls.Add(comboBox1);
+        groupBox1.Location = new Point(6, 6);
+        groupBox1.Name = "groupBox1";
+        groupBox1.Size = new Size(331, 376);
+        groupBox1.TabIndex = 1;
+        groupBox1.TabStop = false;
+        groupBox1.Text = "Startup";
+        // 
+        // label2
+        // 
+        label2.AutoSize = true;
+        label2.Location = new Point(194, 33);
+        label2.Name = "label2";
+        label2.Size = new Size(128, 25);
+        label2.TabIndex = 1;
+        label2.Text = "Display Engine";
+        // 
+        // comboBox1
+        // 
+        comboBox1.FormattingEnabled = true;
+        comboBox1.Items.AddRange(new object[] { "Windows Forms", "Raylib" });
+        comboBox1.Location = new Point(6, 30);
+        comboBox1.Name = "comboBox1";
+        comboBox1.Size = new Size(182, 33);
+        comboBox1.TabIndex = 0;
+        comboBox1.Text = "Windows Forms";
         // 
         // FormSettingsMenu
         // 
@@ -101,6 +138,9 @@ partial class FormSettingsMenu
         tabControl1.ResumeLayout(false);
         tabPage1.ResumeLayout(false);
         tabPage1.PerformLayout();
+        tabPage2.ResumeLayout(false);
+        groupBox1.ResumeLayout(false);
+        groupBox1.PerformLayout();
         ResumeLayout(false);
     }
 
@@ -111,4 +151,7 @@ partial class FormSettingsMenu
     private TabPage tabPage2;
     private RichTextBox richTextBox1;
     private Label label1;
+    private GroupBox groupBox1;
+    private ComboBox comboBox1;
+    private Label label2;
 }

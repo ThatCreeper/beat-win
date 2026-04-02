@@ -11,9 +11,13 @@ internal static class Program
     [STAThread]
     static void Main(string[] args)
     {
-        Application.SetColorMode(SystemColorMode.System);
+        //Application.SetColorMode(SystemColorMode.System);
+        Application.SetCompatibleTextRenderingDefault(false);
+        Application.EnableVisualStyles();
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
-        renderer = new RaylibTextEditorRenderer();
+        //renderer = new RaylibTextEditorRenderer();
+        renderer = new WindowsTextEditorRenderer();
         renderer.OnDroppedFile = file => LoadDocument(new FileDocument(file));
         renderer.OnRequestRender = () => renderer.RenderDocument(document!, caret);
         renderer.OnScrollEvent = motion => renderer.UpdateScroll(document!, motion);
@@ -73,12 +77,7 @@ internal static class Program
         }
         if (renderer!.IsKeyCommandCharacter('M'))
         {
-            NativeWindow native = new();
-            unsafe
-            {
-                native.AssignHandle(renderer.GetWindowHandle());
-            }
-            new FormSettingsMenu().ShowDialog(native);
+            new FormSettingsMenu().ShowDialog(renderer.GetWindowHandle());
         }
     }
 

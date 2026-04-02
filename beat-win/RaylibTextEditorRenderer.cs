@@ -83,12 +83,14 @@ public class RaylibTextEditorRenderer : ScrollAwareTextEditorRenderer
         }
     }
 
-    public override nint GetWindowHandle()
+    public override IWin32Window GetWindowHandle()
     {
+        NativeWindow native = new();
         unsafe
         {
-            return (IntPtr)Raylib.GetWindowHandle();
+            native.AssignHandle((nint)Raylib.GetWindowHandle());
         }
+        return native;
     }
 
     void LineRowInput()
