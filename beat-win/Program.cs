@@ -7,15 +7,11 @@ namespace beat_win;
 
 internal static class Program
 {
-    static ITextEditorRenderer renderer = new RaylibTextEditorRenderer();
+    static ScrollAwareTextEditorRenderer renderer = new RaylibTextEditorRenderer();
     static Document document = new();
     static Caret caret = new(0, 0, document);
 
     static bool mouseVisible = true;
-    static float scroll = -GUI.TopPad;
-    static float maxScroll = 10_000;
-    static int scrollMinVisible = 0;
-
 
     [STAThread]
     static void Main(string[] args)
@@ -36,7 +32,7 @@ internal static class Program
         {
             FileLoader();
 
-            UpdateScroll();
+            renderer.UpdateScroll(document);
             UpdateMouse();
 
             LineGeneralInput();
@@ -53,7 +49,7 @@ internal static class Program
 
             if (renderer.NeedsRender)
             {
-                UpdateMaxScroll();
+                renderer.UpdateMaxScroll(document);
                 Render();
                 SetTitleBarText();
             }
@@ -160,8 +156,7 @@ internal static class Program
 
     static void LoadDocument(Document doc)
     {
-        scrollMinVisible = 0;
-        scroll = -GUI.TopPad;
+        renderer.ResetScroll();
         MarkDirty();
         document.AskSave();
         document = doc;
@@ -226,61 +221,17 @@ internal static class Program
         return Raylib.IsKeyPressed(key) || Raylib.IsKeyPressedRepeat(key);
     }
 
-    static void UpdateScroll()
-    {
-        var scr = -GUI.FloatInch(Raylib.GetMouseWheelMoveV().Y * 0.5f);
-        if (scr == 0) return;
-        
-        scroll += scr;
-        MarkDirty();
-
-        while (scroll < 0)
-        {
-            if (scrollMinVisible == 0)
-            {
-                scroll = Math.Max(-GUI.TopPad, scroll);
-                break;
-            }
-            else
-            {
-                scrollMinVisible--;
-                scroll += GUI.TextSize * document.Lines[scrollMinVisible].RowCount;
-            }
-        }
-        Line minVisibleLine = document.Lines[scrollMinVisible];
-        float scrollMinHeight = GUI.TextSize * minVisibleLine.GlobalRow;
-        if (scroll > maxScroll - scrollMinHeight)
-        {
-            scroll = Math.Min(scroll, maxScroll - scrollMinHeight);
-        }
-        while (scroll > GUI.TextSize * document.Lines[scrollMinVisible].RowCount)
-        {
-            if (scrollMinVisible >= document.Lines.Count - 1)
-            {
-                break;
-            }
-            scroll -= GUI.TextSize * (document.Lines[scrollMinVisible].RowCount);
-            scrollMinVisible++;
-        }
-    }
-
-    static float GetScrollPX()
-    {
-        Line minVisibleLine = document.Lines[scrollMinVisible];
-        return scroll + GUI.TextSize * (minVisibleLine.GlobalRow);
-    }
-
     static int GetMaxVisibleLines()
     {
         return Math.Min(
             (int)Math.Ceiling((float)ScreenHeight / GUI.TextSize) + 2,
-            document.Lines.Count - scrollMinVisible);
+            document.Lines.Count - renderer.ScrollMinVisible);
     }
 
     // Should make me not ever have to deal with this.
     static void ClampScroll()
     {
-        scrollMinVisible = Math.Clamp(scrollMinVisible, 0, document.Lines.Count - 1);
+        renderer.ScrollMinVisible = Math.Clamp(renderer.ScrollMinVisible, 0, document.Lines.Count - 1);
     }
 
     static void UpdateMouse()
@@ -288,7 +239,7 @@ internal static class Program
         var pageWidth = PageWidth;
         var pageLeftPad = PageLeftPad;
         var mX = Raylib.GetMouseX() - pageLeftPad;
-        var mY = Raylib.GetMouseY() + (int)GetScrollPX();
+        var mY = Raylib.GetMouseY() + (int)renderer.GetScrollPX(document);
 
         if (Raylib.GetMouseDelta().LengthSquared() > 0)
         {
@@ -304,11 +255,11 @@ internal static class Program
 
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                 {
-                    SelectPixelXY(mX, mY, Raylib.IsKeyDown(KeyboardKey.LeftShift) || Raylib.IsKeyDown(KeyboardKey.RightShift), scrollMinVisible);
+                    SelectPixelXY(mX, mY, Raylib.IsKeyDown(KeyboardKey.LeftShift) || Raylib.IsKeyDown(KeyboardKey.RightShift), renderer.ScrollMinVisible);
                 }
                 else if (Raylib.IsMouseButtonDown(MouseButton.Left))
                 {
-                    SelectPixelXY(mX, mY, true, scrollMinVisible);
+                    SelectPixelXY(mX, mY, true, renderer.ScrollMinVisible);
                 }
             }
             else
@@ -345,11 +296,6 @@ internal static class Program
         }
     }
 
-    static void UpdateMaxScroll()
-    {
-        maxScroll = (document.TotalRows - 1) * GUI.TextSize;
-    }
-
 
     // RENDER!
 
@@ -363,10 +309,10 @@ internal static class Program
         Raylib.ClearBackground(GUI.UIBackground);
         Raylib.DrawRectangle(pageLeftPad, 0, pageWidth, screenHeight, GUI.Background);
 
-        caret.RenderSelection(pageLeftPad, (int)GetScrollPX());
+        caret.RenderSelection(pageLeftPad, (int)renderer.GetScrollPX(document));
         
-        int drawnLines = document.Lines[scrollMinVisible].GlobalRow;
-        for (int lineIdx = scrollMinVisible; lineIdx < scrollMinVisible + GetMaxVisibleLines(); lineIdx++)
+        int drawnLines = document.Lines[renderer.ScrollMinVisible].GlobalRow;
+        for (int lineIdx = renderer.ScrollMinVisible; lineIdx < renderer.ScrollMinVisible + GetMaxVisibleLines(); lineIdx++)
         {
             Line line = document.Lines[lineIdx];
             // Page numbers!
@@ -376,7 +322,7 @@ internal static class Program
                 renderer.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
-                    GUI.TextSize * drawnLines - (int)GetScrollPX(),
+                    GUI.TextSize * drawnLines - (int)renderer.GetScrollPX(document),
                     false, false, false, GUI.Syntax, true);
             }
             // Scene numbers!
@@ -386,13 +332,13 @@ internal static class Program
                 renderer.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
-                    GUI.TextSize * drawnLines - (int)GetScrollPX(),
+                    GUI.TextSize * drawnLines - (int)renderer.GetScrollPX(document),
                     false, false, false, GUI.Foreground, false);
             }
             // Markers!
             if (line.Kind == LineKind.Note && line.IsMarker)
             {
-                RenderMarker(pageLeftPad, GUI.TextSize * drawnLines - (int)GetScrollPX());
+                RenderMarker(pageLeftPad, GUI.TextSize * drawnLines - (int)renderer.GetScrollPX(document));
             }
 
             foreach (List<LineFragment> fragments in line.Content)
@@ -404,7 +350,7 @@ internal static class Program
                     xOffset += renderer.Text(
                         fragment.Content,
                         pageLeftPad + line.LeftPadPX + xOffset,
-                        GUI.TextSize * drawnLines - (int)GetScrollPX(),
+                        GUI.TextSize * drawnLines - (int)renderer.GetScrollPX(document),
                         fragment.Italic, fragment.Bold, fragment.Underline,
                         line.Color,
                         fragment.Syntax);
@@ -412,7 +358,7 @@ internal static class Program
                 drawnLines++;
             }
         }
-        caret.RenderCaret(pageLeftPad, (int)GetScrollPX());
+        caret.RenderCaret(pageLeftPad, (int)renderer.GetScrollPX(document));
         RenderScrollBar();
         RenderMarkerHints();
         RenderMenu();
@@ -424,7 +370,7 @@ internal static class Program
 
     static void RenderScrollBar()
     {
-        float maxScrollDistance = maxScroll + GUI.TopPad;
+        float maxScrollDistance = renderer.MaxScroll + GUI.TopPad;
 
         int scrollBarPadding = ScrollBarPadding;
         int scrollBarArea = ScreenHeight - scrollBarPadding * 2;
@@ -434,7 +380,7 @@ internal static class Program
         int scrollBarBottomY = ScreenHeight - scrollBarPadding - scrollBarHeight;
         int scrollBarX = ScreenWidth - scrollBarPadding - scrollBarWidth;
 
-        float scrollPercentage = (GetScrollPX() + GUI.TopPad) / (maxScrollDistance);
+        float scrollPercentage = (renderer.GetScrollPX(document) + GUI.TopPad) / (maxScrollDistance);
 
         int scrollBarY = (int)MathHelpers.Lerp(scrollBarTopY, scrollBarBottomY, scrollPercentage);
 

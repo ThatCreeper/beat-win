@@ -5,23 +5,9 @@ using System.Text;
 
 namespace beat_win;
 
-public class RaylibTextEditorRenderer : ITextEditorRenderer
+public class RaylibTextEditorRenderer : ScrollAwareTextEditorRenderer
 {
-    public bool NeedsRender => needsRender;
-
-    bool needsRender;
-
-    public void MarkDirty()
-    {
-        needsRender = true;
-    }
-
-    public void MarkNotDirty()
-    {
-        needsRender = false;
-    }
-
-    public int Text(string text, int x, int y, bool italic, bool bold, bool underline, Raylib_cs.Color color, bool syntax)
+    public override int Text(string text, int x, int y, bool italic, bool bold, bool underline, Raylib_cs.Color color, bool syntax)
     {
         Raylib_cs.Font font = GUI.GetFont(italic, bold);
         int size = GUI.TextSize;
