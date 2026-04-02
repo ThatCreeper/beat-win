@@ -1,4 +1,4 @@
-﻿namespace beat_win;
+﻿namespace beat_win.doc;
 
 public class Document
 {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace beat_win;
+namespace beat_win.doc;
 
 public class LineMutator(Line line)
 {

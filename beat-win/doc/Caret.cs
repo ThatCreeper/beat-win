@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace beat_win;
+namespace beat_win.doc;
 
 public struct SelectionPosition
 {
