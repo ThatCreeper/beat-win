@@ -7,7 +7,7 @@ using Font = Raylib_cs.Font;
 
 namespace beat_win;
 
-public static class RenderHelper
+public static class ITextEditorRenderer
 {
     public static bool NeedsRender = true;
 

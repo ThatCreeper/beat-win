@@ -23,7 +23,7 @@ public class Document
     public Line AddLine(int index, string content = "")
     {
         Edited = true;
-        RenderHelper.NeedsRender = true;
+        ITextEditorRenderer.NeedsRender = true;
         Line line = new(content);
         if (index == 0)
         {
@@ -105,7 +105,7 @@ public class Document
     public void Alter(int index, Action<LineMutator> action)
     {
         Edited = true;
-        RenderHelper.NeedsRender = true;
+        ITextEditorRenderer.NeedsRender = true;
         action(new LineMutator(lines[index]));
         Recombobulate(index);
     }
@@ -113,7 +113,7 @@ public class Document
     public string Alter(int index, Func<LineMutator, string> action)
     {
         Edited = true;
-        RenderHelper.NeedsRender = true;
+        ITextEditorRenderer.NeedsRender = true;
         string result = action(new LineMutator(lines[index]));
         Recombobulate(index);
         return result;
@@ -122,7 +122,7 @@ public class Document
     public string Remove(int index)
     {
         Edited = true;
-        RenderHelper.NeedsRender = true;
+        ITextEditorRenderer.NeedsRender = true;
         string value = lines[index].RawContent;
         lines.RemoveAt(index);
         return value;
@@ -134,7 +134,7 @@ public class Document
         if (lines.Length == 0) return index;
 
         Edited = true;
-        RenderHelper.NeedsRender = true;
+        ITextEditorRenderer.NeedsRender = true;
 
         if (lines.Length == 1)
         {

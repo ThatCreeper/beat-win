@@ -19,6 +19,8 @@ internal static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        Application.SetColorMode(SystemColorMode.System);
+
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.Msaa4xHint);
         Raylib.InitWindow(GUI.Inch(10), GUI.Inch(6), "(beat)");
         Raylib.EnableEventWaiting();
@@ -48,7 +50,7 @@ internal static class Program
 
             ClampScroll();
 
-            if (RenderHelper.NeedsRender)
+            if (ITextEditorRenderer.NeedsRender)
             {
                 UpdateMaxScroll();
                 Render();
@@ -139,13 +141,22 @@ internal static class Program
             FileDocument? doc = FileDocument.OpenWithDialog();
             if (doc != null) LoadDocument(doc);
         }
+        if (Raylib.IsKeyPressed(KeyboardKey.M))
+        {
+            NativeWindow native = new();
+            unsafe
+            {
+                native.AssignHandle((nint)Raylib.GetWindowHandle());
+            }
+            new FormSettingsMenu().ShowDialog(native);
+        }
     }
 
     static void LoadDocument(Document doc)
     {
         scrollMinVisible = 0;
         scroll = -GUI.TopPad;
-        RenderHelper.NeedsRender = true;
+        ITextEditorRenderer.NeedsRender = true;
         document.AskSave();
         document = doc;
         caret = new Caret(0, 0, document);
@@ -215,7 +226,7 @@ internal static class Program
         if (scr == 0) return;
         
         scroll += scr;
-        RenderHelper.NeedsRender = true;
+        ITextEditorRenderer.NeedsRender = true;
 
         while (scroll < 0)
         {
@@ -356,7 +367,7 @@ internal static class Program
             if (!line.PDFUnrenderedCache && (line.GlobalPDFRow % Document.LinesPerPage) == 0)
             {
                 string sidebar = $"{(line.GlobalPDFRow / Document.LinesPerPage) + 1}.";
-                RenderHelper.Text(
+                ITextEditorRenderer.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -366,7 +377,7 @@ internal static class Program
             if (line.Kind == LineKind.Scene)
             {
                 string sidebar = $"{line.GlobalScene}";
-                RenderHelper.Text(
+                ITextEditorRenderer.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -384,7 +395,7 @@ internal static class Program
 
                 foreach (LineFragment fragment in fragments)
                 {
-                    xOffset += RenderHelper.Text(
+                    xOffset += ITextEditorRenderer.Text(
                         fragment.Content,
                         pageLeftPad + line.LeftPadPX + xOffset,
                         GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -398,8 +409,9 @@ internal static class Program
         caret.RenderCaret(pageLeftPad, (int)GetScrollPX());
         RenderScrollBar();
         RenderMarkerHints();
+        RenderMenu();
         Raylib.EndDrawing();
-        RenderHelper.NeedsRender = false;
+        ITextEditorRenderer.NeedsRender = false;
     }
 
     static int ScrollBarPadding => GUI.Point(5);
@@ -473,5 +485,10 @@ internal static class Program
 
             Raylib.DrawCircle(x, y, radius, Raylib.Fade(GUI.Note, 0.5f));
         }
+    }
+
+    static void RenderMenu()
+    {
+        // TODO IMPLEMENTME
     }
 }
