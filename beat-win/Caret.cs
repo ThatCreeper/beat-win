@@ -78,6 +78,7 @@ public class Caret
             if (SelectionEnd.Row == 0)
             {
                 SelectionEnd.Index = 0;
+                Program.MarkDirty();
                 return;
             }
             SelectionEnd.Row--;
@@ -88,6 +89,7 @@ public class Caret
             if (SelectionEnd.Row == document.Lines.Count - 1)
             {
                 SelectionEnd.Index = EndLine.MaxIdx;
+                Program.MarkDirty();
                 return;
             }
             modifiedSubrow -= EndLine.RowCount;
