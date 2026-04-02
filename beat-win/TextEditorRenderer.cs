@@ -40,4 +40,5 @@ public abstract class TextEditorRenderer
     public abstract int Text(string text, int x, int y, bool italic, bool bold, bool underline, Color color, bool syntax);
     public abstract void RenderDocument(Document document, Caret caret);
     public abstract bool IsKeyCommandCharacter(char key);
+    public abstract IntPtr GetWindowHandle();
 }

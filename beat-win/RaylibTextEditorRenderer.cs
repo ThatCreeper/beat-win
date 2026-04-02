@@ -1,7 +1,6 @@
 ﻿using beat_win.doc;
 using Raylib_cs;
 using Windows.Win32;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using Rectangle = Raylib_cs.Rectangle;
 
 namespace beat_win;
@@ -81,6 +80,14 @@ public class RaylibTextEditorRenderer : ScrollAwareTextEditorRenderer
         if (KeyOrRepeat(KeyboardKey.Down))
         {
             OnDown?.Invoke(shifting);
+        }
+    }
+
+    public override nint GetWindowHandle()
+    {
+        unsafe
+        {
+            return (IntPtr)Raylib.GetWindowHandle();
         }
     }
 

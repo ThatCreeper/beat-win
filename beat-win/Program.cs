@@ -1,15 +1,11 @@
 ﻿using beat_win.doc;
-using Raylib_cs;
-using Windows.Win32;
-using static QuestPDF.Helpers.Colors;
-using Rectangle = Raylib_cs.Rectangle;
 
 namespace beat_win;
 
 internal static class Program
 {
     static ScrollAwareTextEditorRenderer? renderer;
-    static Document? document = new();
+    static Document document = new();
     static Caret caret = new(0, 0, document);
 
     [STAThread]
@@ -80,7 +76,7 @@ internal static class Program
             NativeWindow native = new();
             unsafe
             {
-                native.AssignHandle((nint)Raylib.GetWindowHandle());
+                native.AssignHandle(renderer.GetWindowHandle());
             }
             new FormSettingsMenu().ShowDialog(native);
         }

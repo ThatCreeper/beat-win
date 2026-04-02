@@ -11,7 +11,6 @@ public class FileDocument : Document
 
     public FileDocument(string path) : base()
     {
-        
         Path = path;
         name = System.IO.Path.GetFileName(Path);
         string[] lines = File.ReadAllLines(Path);
