@@ -7,6 +7,7 @@ namespace beat_win;
 
 internal static class Program
 {
+    static ITextEditorRenderer renderer = new RaylibTextEditorRenderer();
     static Document document = new();
     static Caret caret = new(0, 0, document);
 
@@ -50,7 +51,7 @@ internal static class Program
 
             ClampScroll();
 
-            if (ITextEditorRenderer.NeedsRender)
+            if (renderer.NeedsRender)
             {
                 UpdateMaxScroll();
                 Render();
@@ -65,6 +66,11 @@ internal static class Program
         document.AskSave();
 
         Raylib.CloseWindow();
+    }
+
+    public static void MarkDirty()
+    {
+        renderer.MarkDirty();
     }
 
     static void SetTitleBarText()
@@ -156,7 +162,7 @@ internal static class Program
     {
         scrollMinVisible = 0;
         scroll = -GUI.TopPad;
-        ITextEditorRenderer.NeedsRender = true;
+        MarkDirty();
         document.AskSave();
         document = doc;
         caret = new Caret(0, 0, document);
@@ -226,7 +232,7 @@ internal static class Program
         if (scr == 0) return;
         
         scroll += scr;
-        ITextEditorRenderer.NeedsRender = true;
+        MarkDirty();
 
         while (scroll < 0)
         {
@@ -367,7 +373,7 @@ internal static class Program
             if (!line.PDFUnrenderedCache && (line.GlobalPDFRow % Document.LinesPerPage) == 0)
             {
                 string sidebar = $"{(line.GlobalPDFRow / Document.LinesPerPage) + 1}.";
-                ITextEditorRenderer.Text(
+                renderer.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) + GUI.TextWidth(61),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -377,7 +383,7 @@ internal static class Program
             if (line.Kind == LineKind.Scene)
             {
                 string sidebar = $"{line.GlobalScene}";
-                ITextEditorRenderer.Text(
+                renderer.Text(
                     sidebar,
                     pageLeftPad + GUI.Inch(GUI.ActionLeftPad) - GUI.TextWidth(1 + sidebar.Length),
                     GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -395,7 +401,7 @@ internal static class Program
 
                 foreach (LineFragment fragment in fragments)
                 {
-                    xOffset += ITextEditorRenderer.Text(
+                    xOffset += renderer.Text(
                         fragment.Content,
                         pageLeftPad + line.LeftPadPX + xOffset,
                         GUI.TextSize * drawnLines - (int)GetScrollPX(),
@@ -411,7 +417,7 @@ internal static class Program
         RenderMarkerHints();
         RenderMenu();
         Raylib.EndDrawing();
-        ITextEditorRenderer.NeedsRender = false;
+        renderer.MarkNotDirty();
     }
 
     static int ScrollBarPadding => GUI.Point(5);

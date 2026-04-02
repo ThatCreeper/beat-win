@@ -67,7 +67,7 @@ public class Caret
             SelectionEnd.Row++;
         }
         upDownXPos = EndLine.GetCursorCharX(SelectionEnd.Index);
-        ITextEditorRenderer.NeedsRender = true;
+        Program.MarkDirty();
     }
 
     public void MoveEndY(int y)
@@ -94,7 +94,7 @@ public class Caret
             SelectionEnd.Row++;
         }
         SelectionEnd.Index = EndLine.GetIndex(upDownXPos, modifiedSubrow);
-        ITextEditorRenderer.NeedsRender = true;
+        Program.MarkDirty();
     }
 
     public void MoveCaretX(int x)
@@ -114,7 +114,7 @@ public class Caret
         SelectionEnd.Row = row;
         SelectionEnd.Index = index;
         upDownXPos = EndLine.GetCursorCharX(index);
-        ITextEditorRenderer.NeedsRender = true;
+        Program.MarkDirty();
     }
 
     public void SetCaretIndex(int row, int index)

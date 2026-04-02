@@ -56,7 +56,7 @@ public class FileDocument : Document
         string serialized = String.Join("\n", Lines.Select(line => line.RawContent));
         File.WriteAllText(Path, serialized);
         Edited = false;
-        ITextEditorRenderer.NeedsRender = true;
+        Program.MarkDirty();
     }
 
     public override string Name()
