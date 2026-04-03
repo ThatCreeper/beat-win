@@ -4,10 +4,16 @@ using System.Text;
 
 namespace beat_win.forms;
 
-public class EditorDrawingControl : Control
+public class EditorDrawingControl : ScrollableControl
 {
     public bool IsReal = false;
 
+    protected override void OnCreateControl()
+    {
+        AutoScroll = true;
+        VScroll = true;
+        base.OnCreateControl();
+    }
 
     protected override void OnPaint(PaintEventArgs e)
     {

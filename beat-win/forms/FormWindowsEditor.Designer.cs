@@ -37,8 +37,11 @@ partial class FormWindowsEditor
         help = new ToolStripButton();
         editor = new EditorDrawingControl();
         statusStrip1 = new StatusStrip();
+        wordCount = new ToolStripStatusLabel();
+        pageCount = new ToolStripStatusLabel();
         menuStrip1.SuspendLayout();
         toolStrip1.SuspendLayout();
+        statusStrip1.SuspendLayout();
         SuspendLayout();
         // 
         // menuStrip1
@@ -104,27 +107,41 @@ partial class FormWindowsEditor
         // editor
         // 
         editor.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        editor.AutoScroll = true;
         editor.Cursor = Cursors.IBeam;
         editor.Location = new Point(0, 77);
         editor.Name = "editor";
         editor.Size = new Size(800, 348);
         editor.TabIndex = 2;
         editor.Text = "editorDrawingControl1";
-        editor.Click += editor_Click;
         editor.Paint += editor_Paint;
         editor.Enter += editor_Enter;
         editor.KeyPress += editor_KeyPress;
         editor.Leave += editor_Leave;
+        editor.MouseDown += editor_Click;
         editor.PreviewKeyDown += editor_KeyDown;
         // 
         // statusStrip1
         // 
         statusStrip1.ImageScalingSize = new Size(24, 24);
-        statusStrip1.Location = new Point(0, 428);
+        statusStrip1.Items.AddRange(new ToolStripItem[] { wordCount, pageCount });
+        statusStrip1.Location = new Point(0, 418);
         statusStrip1.Name = "statusStrip1";
-        statusStrip1.Size = new Size(800, 22);
+        statusStrip1.Size = new Size(800, 32);
         statusStrip1.TabIndex = 3;
         statusStrip1.Text = "statusStrip1";
+        // 
+        // wordCount
+        // 
+        wordCount.Name = "wordCount";
+        wordCount.Size = new Size(76, 25);
+        wordCount.Text = "0 words";
+        // 
+        // pageCount
+        // 
+        pageCount.Name = "pageCount";
+        pageCount.Size = new Size(75, 25);
+        pageCount.Text = "0 pages";
         // 
         // FormWindowsEditor
         // 
@@ -143,6 +160,8 @@ partial class FormWindowsEditor
         menuStrip1.PerformLayout();
         toolStrip1.ResumeLayout(false);
         toolStrip1.PerformLayout();
+        statusStrip1.ResumeLayout(false);
+        statusStrip1.PerformLayout();
         ResumeLayout(false);
         PerformLayout();
     }
@@ -157,4 +176,6 @@ partial class FormWindowsEditor
     private ToolStripButton help;
     private EditorDrawingControl editor;
     private StatusStrip statusStrip1;
+    public ToolStripStatusLabel wordCount;
+    public ToolStripStatusLabel pageCount;
 }

@@ -23,6 +23,9 @@ public partial class FormWindowsEditor : Form
 
         editor.GotFocus += editor_GotFocus;
         editor.LostFocus += editor_LostFocus;
+        editor.Scroll += editor_Scroll;
+        editor.MouseWheel += editor_MouseWheel;
+        editor.MouseMove += editor_MouseMove;
     }
 
     private void save_Click(object sender, EventArgs e)
@@ -48,6 +51,8 @@ public partial class FormWindowsEditor : Form
         Renderer.PaintEvent = e;
         Renderer.DrawRect = editor.ClientRectangle;
         Renderer.OnRequestRender?.Invoke();
+        editor.AutoScrollMinSize = new Size(0, Renderer.MaxScroll + editor.ClientRectangle.Height + GUI.TopPad);
+        editor.VerticalScroll.Value = Renderer.ScrollPixels + GUI.TopPad;
     }
 
     public void InvalidateEditor()
@@ -116,5 +121,26 @@ public partial class FormWindowsEditor : Form
     private void editor_LostFocus(object? sender, EventArgs e)
     {
         PInvoke.DestroyCaret();
+    }
+
+    private void editor_Scroll(object? sender, ScrollEventArgs e)
+    {
+        Renderer.OnScrollEvent?.Invoke(e.NewValue - e.OldValue);
+    }
+
+    private void editor_MouseWheel(object? sender, MouseEventArgs e)
+    {
+        if (e.Delta > 0 && Renderer.ScrollPixels == -GUI.TopPad) return;
+        if (e.Delta < 0 && Renderer.ScrollPixels == Renderer.MaxScroll) return;
+        if (e.Delta == 0) return;
+        Renderer.OnScrollEvent?.Invoke(-e.Delta);
+    }
+
+    private void editor_MouseMove(object? sender, MouseEventArgs e)
+    {
+        if (!editor.Focused) return;
+        var point = editor.PointToClient(Cursor.Position);
+        if (e.Button == MouseButtons.Left)
+            Renderer.Drag(point.X, point.Y, editor.ClientRectangle.Width);
     }
 }
