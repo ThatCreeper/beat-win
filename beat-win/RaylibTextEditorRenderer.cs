@@ -121,7 +121,7 @@ public class RaylibTextEditorRenderer : ScrollAwareTextEditorRenderer
         Raylib.SetWindowTitle($"(beat) {document.Name()} {(document.Edited ? "(Unsaved)" : "")}");
     }
 
-    public override int Text(string text, int x, int y, bool italic, bool bold, bool underline, Raylib_cs.Color color, bool syntax)
+    public int Text(string text, int x, int y, bool italic, bool bold, bool underline, Raylib_cs.Color color, bool syntax)
     {
         Raylib_cs.Font font = GUI.GetFont(italic, bold);
         int size = GUI.TextSize;

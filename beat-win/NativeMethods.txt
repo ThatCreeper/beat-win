@@ -1,1 +1,9 @@
 DwmSetWindowAttribute
+CreateCaret
+SetCaretPos
+DestroyCaret
+ShowCaret
+HideCaret
+ExtTextOut
+SetBkColor
+SetTextColor

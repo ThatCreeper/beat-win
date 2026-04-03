@@ -27,7 +27,7 @@ public abstract class TextEditorRenderer
 
     bool needsRender = true;
 
-    public void MarkDirty()
+    public virtual void MarkDirty()
     {
         needsRender = true;
     }
@@ -37,7 +37,6 @@ public abstract class TextEditorRenderer
     }
 
     public abstract void Run();
-    public abstract int Text(string text, int x, int y, bool italic, bool bold, bool underline, Color color, bool syntax);
     public abstract void RenderDocument(Document document, Caret caret);
     public abstract bool IsKeyCommandCharacter(char key);
     public abstract IWin32Window GetWindowHandle();

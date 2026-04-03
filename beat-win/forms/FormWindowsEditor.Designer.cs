@@ -104,11 +104,18 @@ partial class FormWindowsEditor
         // editor
         // 
         editor.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        editor.Cursor = Cursors.IBeam;
         editor.Location = new Point(0, 77);
         editor.Name = "editor";
         editor.Size = new Size(800, 348);
         editor.TabIndex = 2;
         editor.Text = "editorDrawingControl1";
+        editor.Click += editor_Click;
+        editor.Paint += editor_Paint;
+        editor.Enter += editor_Enter;
+        editor.KeyPress += editor_KeyPress;
+        editor.Leave += editor_Leave;
+        editor.PreviewKeyDown += editor_KeyDown;
         // 
         // statusStrip1
         // 

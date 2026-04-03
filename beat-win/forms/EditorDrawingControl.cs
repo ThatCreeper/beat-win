@@ -8,6 +8,7 @@ public class EditorDrawingControl : Control
 {
     public bool IsReal = false;
 
+
     protected override void OnPaint(PaintEventArgs e)
     {
         if (!IsReal)

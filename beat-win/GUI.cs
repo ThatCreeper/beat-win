@@ -28,12 +28,12 @@ public static class GUI
     public static float DialogueLeftPad = ActionLeftPad + 1.3f;
     public static float DialogueRightPad = ActionRightPad + 1;
 
-    public static int TextSize => Point(12);
-    public static float CharacterWidthInch = 0.1f;
-    public static float CharacterWidth => FloatInch(CharacterWidthInch);
-
-    static float StockDPI = 96;
+    static float StockDPI = 112;
     static float InchToPx = StockDPI;
+
+    public static int TextSize => Point(12);
+    public static float CharacterWidth = Inch(0.1f);
+    public static float CharacterWidthInch => CharacterWidth / InchToPx;
 
     public static float FloatInch(float inches) => inches * InchToPx;
     public static int Inch(float inches) => (int)FloatInch(inches);
@@ -43,6 +43,11 @@ public static class GUI
     public static void Update()
     {
         InchToPx = Raylib.GetWindowScaleDPI().X * StockDPI;
+    }
+
+    public static void Update(float dpiFactor)
+    {
+        InchToPx = dpiFactor * dpiFactor;
     }
 
     public static Font LoadFont(string path)
