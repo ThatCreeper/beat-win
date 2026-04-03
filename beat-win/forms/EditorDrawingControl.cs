@@ -12,6 +12,8 @@ public class EditorDrawingControl : ScrollableControl
     {
         AutoScroll = true;
         VScroll = true;
+        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
+        UpdateStyles();
         base.OnCreateControl();
     }
 

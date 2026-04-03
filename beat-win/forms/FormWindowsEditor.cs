@@ -26,6 +26,8 @@ public partial class FormWindowsEditor : Form
         editor.Scroll += editor_Scroll;
         editor.MouseWheel += editor_MouseWheel;
         editor.MouseMove += editor_MouseMove;
+
+        //DoubleBuffered = true;
     }
 
     private void save_Click(object sender, EventArgs e)

@@ -174,8 +174,8 @@ partial class FormWindowsEditor
     private ToolStripButton save;
     private ToolStripButton open;
     private ToolStripButton help;
-    private EditorDrawingControl editor;
     private StatusStrip statusStrip1;
     public ToolStripStatusLabel wordCount;
     public ToolStripStatusLabel pageCount;
+    public EditorDrawingControl editor;
 }
