@@ -14,6 +14,7 @@ public class RaylibTextEditorRenderer : ScrollAwareTextEditorRenderer
         Raylib.EnableEventWaiting();
         SetTitleDark(true);
 
+        GUI.StockDPI = 96;
         GUI.Load();
         ResizeCenter(GUI.Inch(10), GUI.Inch(6));
     }

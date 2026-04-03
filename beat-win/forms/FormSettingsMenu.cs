@@ -14,4 +14,10 @@ public partial class FormSettingsMenu : Form
     {
         InitializeComponent();
     }
+
+    private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        ConfigFile.Instance.RaylibRenderer = comboBox1.SelectedIndex == 1;
+        ConfigFile.Save();
+    }
 }

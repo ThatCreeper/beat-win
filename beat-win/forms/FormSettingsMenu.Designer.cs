@@ -126,6 +126,7 @@ partial class FormSettingsMenu
         comboBox1.Size = new Size(182, 33);
         comboBox1.TabIndex = 0;
         comboBox1.Text = "Windows Forms";
+        comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
         // 
         // FormSettingsMenu
         // 

@@ -1,4 +1,5 @@
 ﻿using beat_win.doc;
+using System.Text.Json;
 
 namespace beat_win;
 
@@ -11,13 +12,17 @@ internal static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        ConfigFile.Load();
+
         //Application.SetColorMode(SystemColorMode.System);
         Application.SetCompatibleTextRenderingDefault(false);
         Application.EnableVisualStyles();
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
-        //renderer = new RaylibTextEditorRenderer();
-        renderer = new WindowsTextEditorRenderer();
+        if (ConfigFile.Instance.RaylibRenderer)
+            renderer = new RaylibTextEditorRenderer();
+        else
+            renderer = new WindowsTextEditorRenderer();
         renderer.OnDroppedFile = file => LoadDocument(new FileDocument(file));
         renderer.OnRequestRender = () => renderer.RenderDocument(document!, caret);
         renderer.OnScrollEvent = motion => renderer.UpdateScroll(document!, motion);

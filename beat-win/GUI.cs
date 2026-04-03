@@ -28,7 +28,7 @@ public static class GUI
     public static float DialogueLeftPad = ActionLeftPad + 1.3f;
     public static float DialogueRightPad = ActionRightPad + 1;
 
-    static float StockDPI = 112;
+    public static float StockDPI = 112;
     static float InchToPx = StockDPI;
 
     public static int TextSize => Point(12);
@@ -43,11 +43,7 @@ public static class GUI
     public static void Update()
     {
         InchToPx = Raylib.GetWindowScaleDPI().X * StockDPI;
-    }
-
-    public static void Update(float dpiFactor)
-    {
-        InchToPx = dpiFactor * dpiFactor;
+        CharacterWidth = FloatInch(0.1f);
     }
 
     public static Font LoadFont(string path)
